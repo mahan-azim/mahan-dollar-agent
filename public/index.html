@@ -1,0 +1,74 @@
+<!doctype html>
+<html lang="fa" dir="rtl">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#07111b">
+  <title>ماهان مارکت | پایش بازار</title>
+  <link rel="stylesheet" href="/assets/style.css">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+  <div class="app-shell">
+    <aside class="sidebar">
+      <a class="brand" href="/" aria-label="ماهان مارکت">
+        <span class="brand-mark">M</span><span><b>MAHAN</b><small>MARKET</small></span>
+      </a>
+      <div class="side-label">منوی اصلی</div>
+      <nav>
+        <a class="nav-link active" href="#dashboard" data-view="dashboard"><span>▦</span> نمای کلی</a>
+        <a class="nav-link" href="#assets" data-view="assets"><span>◈</span> دارایی‌ها</a>
+        <a class="nav-link" href="#news" data-view="news"><span>≋</span> اخبار بازار</a>
+        <a class="nav-link" href="#analysis" data-view="analysis"><span>⌁</span> تحلیل ورک‌فلو</a>
+      </nav>
+      <div class="sidebar-bottom">
+        <span class="status-dot"></span><span id="connection-label">در انتظار اتصال API</span>
+        <small>داده‌ها از ورک‌فلو دریافت می‌شوند</small>
+      </div>
+    </aside>
+
+    <main class="main">
+      <header class="topbar">
+        <div><div class="eyebrow">مرکز پایش بازار</div><h1 id="page-title">نمای کلی بازار</h1></div>
+        <div class="top-actions"><span id="last-updated" class="updated">آخرین به‌روزرسانی: نامشخص</span><button id="refresh-btn" class="button button-outline">↻ بروزرسانی</button></div>
+      </header>
+
+      <div id="error-banner" class="notice hidden" role="status"></div>
+      <div id="demo-banner" class="notice notice-warn hidden">هنوز دادهٔ زنده دریافت نشده است. مقادیر نمونه نمایش داده نمی‌شوند؛ API را به خروجی JSON ورک‌فلو وصل کنید.</div>
+
+      <section class="view active" id="view-dashboard">
+        <div class="section-heading"><div><h2>خلاصه بازار</h2><p>نمایش داده‌های دریافتی از n8n، بدون تحلیل مجدد در سایت</p></div><span class="live-pill"><i></i> وضعیت API</span></div>
+        <div class="stats-grid" id="summary-cards">
+          <article class="stat-card"><span>دارایی‌های دریافت‌شده</span><strong id="asset-count">۰</strong><small>از API</small></article>
+          <article class="stat-card"><span>اخبار دریافتی</span><strong id="news-count">۰</strong><small>از ورک‌فلو</small></article>
+          <article class="stat-card"><span>آخرین دریافت</span><strong id="data-age">—</strong><small>زمان ثبت‌شده در داده</small></article>
+        </div>
+        <div class="content-grid">
+          <article class="panel chart-panel"><div class="panel-head"><div><h3>روند قیمت</h3><p id="chart-subtitle">پس از اتصال تاریخچه نمایش داده می‌شود</p></div><select id="chart-asset" aria-label="انتخاب دارایی"><option value="">انتخاب دارایی</option></select></div><div class="chart-wrap"><canvas id="price-chart" aria-label="نمودار قیمت"></canvas><div id="chart-empty" class="empty-state">برای نمایش نمودار واقعی، API باید آرایهٔ history شامل زمان و قیمت برگرداند.</div></div></article>
+          <article class="panel"><div class="panel-head"><div><h3>دارایی‌ها</h3><p>آخرین قیمت دریافتی</p></div><a href="#assets" class="text-link" data-view="assets">مشاهده همه</a></div><div id="top-assets" class="asset-list"><div class="empty-state">داده‌ای دریافت نشده است.</div></div></article>
+        </div>
+        <article class="panel"><div class="panel-head"><div><h3>آخرین اخبار</h3><p>عنوان و لینک خبرهای ارسال‌شده توسط ورک‌فلو</p></div><a href="#news" class="text-link" data-view="news">همه اخبار</a></div><div id="latest-news" class="news-list"><div class="empty-state">خبری دریافت نشده است.</div></div></article>
+      </section>
+
+      <section class="view" id="view-assets">
+        <div class="section-heading"><div><h2>دارایی‌ها</h2><p>فهرست پویا؛ برای افزودن ارز، API دارایی جدید را برگرداند.</p></div></div>
+        <div id="all-assets" class="asset-table panel"><div class="empty-state">داده‌ای دریافت نشده است.</div></div>
+      </section>
+
+      <section class="view" id="view-news">
+        <div class="section-heading"><div><h2>اخبار بازار</h2><p>خبرها از n8n دریافت می‌شوند؛ سایت خبرها را تحلیل یا رتبه‌بندی نمی‌کند.</p></div></div>
+        <div id="all-news" class="panel news-list"><div class="empty-state">خبری دریافت نشده است.</div></div>
+      </section>
+
+      <section class="view" id="view-analysis">
+        <div class="section-heading"><div><h2>تحلیل ورک‌فلو</h2><p>متن تحلیل تولیدشده توسط AI Agent، عیناً از API نمایش داده می‌شود.</p></div></div>
+        <article class="panel analysis-panel"><div class="panel-head"><h3>گزارش آخرین اجرا</h3><span id="analysis-time" class="muted">—</span></div><div id="analysis-output" class="analysis-output empty-state">تحلیلی از API دریافت نشده است.</div></article>
+        <article class="panel"><div class="panel-head"><h3>اطلاعات منابع</h3></div><div id="sources-list" class="source-list">اطلاعات منبع در دسترس نیست.</div></article>
+      </section>
+
+      <footer>MAHAN MARKET <span>•</span> رابط نمایش داده‌های ورک‌فلو</footer>
+    </main>
+  </div>
+  <script src="/assets/app.js"></script>
+</body>
+</html>
