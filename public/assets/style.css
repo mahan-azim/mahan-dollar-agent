@@ -108,3 +108,17 @@ body[data-theme-mode="light"] .button-outline{background:#fff;color:color-mix(in
 body[data-theme-mode="light"] .custom-color-row input{background:#f6f9fb}
 body[data-theme-mode="light"] .empty-state{color:#617785}
 @media(max-width:560px){.custom-color-row{align-items:stretch;flex-wrap:wrap}.custom-color-preview{align-self:center}.custom-color-row input{min-width:calc(100% - 42px)}.custom-color-row .button{flex:1}.settings-toggle-row{gap:12px}.theme-color-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
+
+
+/* Immediate, consistent application of the selected accent across the interface */
+.nav-link:hover,.nav-link.active{background:color-mix(in srgb,var(--cyan) 13%,var(--panel));color:var(--cyan)}
+.button-primary{background:linear-gradient(120deg,var(--cyan),var(--blue));border-color:transparent}
+.brand small,.text-link,.news-item a:hover{color:var(--cyan)}
+.live-pill i,.status-dot{background:var(--cyan)}
+.theme-switch input:checked+.theme-switch-track{background:var(--cyan)}
+.color-swatch.active{border-color:var(--cyan);box-shadow:0 0 0 2px color-mix(in srgb,var(--cyan) 22%,transparent)}
+body[data-theme-mode="light"]{background:var(--bg);color:var(--text)}
+body[data-theme-mode="light"] .sidebar{background:var(--panel)}
+body[data-theme-mode="light"] .stat-card,body[data-theme-mode="light"] .panel{background:var(--panel)}
+body[data-theme-mode="light"] .nav-link:hover,body[data-theme-mode="light"] .nav-link.active{background:color-mix(in srgb,var(--cyan) 13%,var(--panel));color:color-mix(in srgb,var(--cyan) 70%,#102333)}
+body[data-theme-mode="light"] .stat-card strong,body[data-theme-mode="light"] .text-link,body[data-theme-mode="light"] .brand small{color:color-mix(in srgb,var(--cyan) 70%,#102333)}
