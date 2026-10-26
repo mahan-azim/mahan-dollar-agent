@@ -57,8 +57,55 @@
         <article class="panel forecast-panel"><div class="panel-head"><div><h3>جدول قیمت‌ها و پیش‌بینی‌ها</h3><p>اطلاعات فقط از ورک‌فلو n8n دریافت می‌شود.</p></div></div><div id="forecast-table" class="asset-table"><div class="empty-state">هنوز دادهٔ پیش‌بینی دریافت نشده است.</div></div></article>
       </section>
 
-      <section class="view" id="view-assets">
-        <div class="section-heading"><div><h2>تنظیمات</h2><p>تنظیمات نمایش و اتصال داده‌ها در نسخه‌های بعدی اضافه می‌شوند.</p></div></div><article class="panel"><p>داده‌ها و پیش‌بینی‌ها از n8n دریافت می‌شوند؛ سایت خودش پیش‌بینی تولید نمی‌کند.</p></article>
+      <section class="view" id="view-settings">
+        <div class="section-heading settings-heading">
+          <div><h2>تنظیمات نمایش</h2><p>ظاهر سایت را مطابق سلیقه‌ات تنظیم کن. انتخاب‌ها در همین مرورگر ذخیره می‌شوند.</p></div>
+          <span class="live-pill"><i></i> قابل شخصی‌سازی</span>
+        </div>
+
+        <article class="panel settings-panel">
+          <div class="panel-head">
+            <div><h3>حالت نمایش</h3><p>بین ظاهر روشن و تاریک جابه‌جا شو.</p></div>
+            <span id="theme-mode-badge" class="source-chip">حالت تاریک</span>
+          </div>
+          <div class="settings-toggle-row">
+            <div class="settings-toggle-copy">
+              <strong id="theme-mode-title">حالت تاریک</strong>
+              <p id="theme-mode-description">پس‌زمینهٔ تیره برای استفاده در محیط کم‌نور</p>
+            </div>
+            <label class="theme-switch" for="theme-mode-toggle">
+              <input id="theme-mode-toggle" type="checkbox" role="switch" aria-label="فعال‌کردن حالت روشن">
+              <span class="theme-switch-track" aria-hidden="true"></span>
+            </label>
+          </div>
+        </article>
+
+        <article class="panel settings-panel">
+          <div class="panel-head">
+            <div><h3>رنگ اصلی سایت</h3><p>رنگ انتخابی روی دکمه‌ها، لینک‌ها، نمودار و بخش‌های تأکیدی اعمال می‌شود.</p></div>
+            <span class="source-chip">پیش‌فرض: فیروزه‌ای نئونی</span>
+          </div>
+          <div class="theme-color-grid" role="group" aria-label="رنگ‌های آماده">
+            <button type="button" class="color-swatch active" data-theme-color="#00ffc4" aria-label="فیروزه‌ای نئونی" aria-pressed="true"><span class="swatch-dot"></span><span>فیروزه‌ای</span></button>
+            <button type="button" class="color-swatch" data-theme-color="#00ffff" aria-label="فیروزه‌ای روشن" aria-pressed="false"><span class="swatch-dot"></span><span>آبی فیروزه‌ای</span></button>
+            <button type="button" class="color-swatch" data-theme-color="#00ff00" aria-label="سبز نئونی" aria-pressed="false"><span class="swatch-dot"></span><span>سبز نئونی</span></button>
+            <button type="button" class="color-swatch" data-theme-color="#00d9ff" aria-label="آبی روشن" aria-pressed="false"><span class="swatch-dot"></span><span>آبی</span></button>
+            <button type="button" class="color-swatch" data-theme-color="#a78bfa" aria-label="بنفش" aria-pressed="false"><span class="swatch-dot"></span><span>بنفش</span></button>
+            <button type="button" class="color-swatch" data-theme-color="#ffc766" aria-label="طلایی" aria-pressed="false"><span class="swatch-dot"></span><span>طلایی</span></button>
+            <button type="button" class="color-swatch" data-theme-color="#ff7185" aria-label="صورتی مرجانی" aria-pressed="false"><span class="swatch-dot"></span><span>مرجانی</span></button>
+          </div>
+          <div class="custom-color">
+            <label for="custom-theme-color">یا کد رنگ دلخواهت را وارد کن</label>
+            <div class="custom-color-row">
+              <span id="custom-color-preview" class="custom-color-preview" aria-hidden="true"></span>
+              <input id="custom-theme-color" type="text" dir="ltr" maxlength="7" spellcheck="false" autocomplete="off" placeholder="#00FFC4" aria-describedby="custom-color-help">
+              <button type="button" id="theme-color-apply" class="button button-primary">اعمال رنگ</button>
+            </div>
+            <p id="custom-color-help" class="settings-help">کد HEX مثل <code>#00FFC4</code> وارد کن. باید با # شروع شود و ۳ یا ۶ رقم هگزادسیمال داشته باشد.</p>
+          </div>
+          <p id="theme-settings-message" class="theme-settings-message" role="status" aria-live="polite">رنگ اصلی پیش‌فرض انتخاب شده است.</p>
+        </article>
+        <article class="panel settings-note"><p>تنظیمات ظاهری فقط در همین مرورگر ذخیره می‌شوند و روی داده‌ها یا تحلیل‌های بازار تأثیری ندارند.</p></article>
       </section>
 
       <section class="view" id="view-news">
