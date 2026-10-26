@@ -532,7 +532,7 @@ const server = http.createServer(async (req, res) => {
   catch { return json(res, 400, { error: 'آدرس درخواست نامعتبر است.' }); }
 
   if (pathname === '/health') {
-    return json(res, 200, { ok: true, service: 'mahan-market-agent', storage: 'file-backed' });
+    return json(res, 200, { ok: true });
   }
 
   if (pathname === '/api/auth/config' && req.method === 'GET') {
@@ -563,8 +563,9 @@ const server = http.createServer(async (req, res) => {
       res.setHeader('Allow', 'GET');
       return json(res, 405, { error: 'این مسیر فقط برای خواندن داده و با GET در دسترس است.' });
     }
-    if (!state.latest) return json(res, 404, { error: 'هنوز اولین داده از n8n دریافت نشده است.', code: 'WAITING_FOR_FIRST_PUSH' });
-    return json(res, 200, state.latest);
+    if (!state.latest) return json(res, 200, { generated_at: null, assets: [], news: [], analysis: '', sources: {} });
+    const { received_at, event_id, server_received_at, ...publicSnapshot } = state.latest;
+    return json(res, 200, publicSnapshot);
   }
   return serveStatic(req, res, pathname);
 });

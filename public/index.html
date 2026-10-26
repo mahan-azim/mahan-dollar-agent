@@ -26,8 +26,8 @@
         <a class="nav-link hidden" href="#admin" data-view="admin" data-admin-only><span>⚙</span> پنل مدیریت</a>
       </nav>
       <div class="sidebar-bottom">
-        <span class="status-dot"></span><span id="connection-label">در انتظار اتصال API</span>
-        <small>داده‌ها از ورک‌فلو دریافت می‌شوند</small>
+        <span class="status-dot"></span><span id="connection-label">منتظر دادهٔ بازار</span>
+        <small>آخرین دادهٔ منتشرشده نمایش داده می‌شود</small>
       </div>
     </aside>
 
@@ -42,17 +42,17 @@
       </header>
 
       <div id="error-banner" class="notice hidden" role="status"></div>
-      <div id="demo-banner" class="notice notice-warn hidden">هنوز دادهٔ زنده دریافت نشده است. مقادیر نمونه نمایش داده نمی‌شوند؛ API را به خروجی JSON ورک‌فلو وصل کنید.</div>
+      <div id="demo-banner" class="notice notice-warn hidden">هنوز بستهٔ داده‌ای منتشر نشده است. پس از دریافت اولین تحلیل، اطلاعات بازار اینجا نمایش داده می‌شود.</div>
 
       <section class="view active" id="view-dashboard">
-        <div class="section-heading"><div><h2>خلاصه بازار</h2><p>نمایش داده‌های دریافتی از n8n، بدون تحلیل مجدد در سایت</p></div><span class="live-pill"><i></i> وضعیت API</span></div>
+        <div class="section-heading"><div><h2>خلاصه بازار</h2><p>نمایش داده‌های دریافتی از n8n، بدون تحلیل مجدد در سایت</p></div><span class="live-pill"><i></i> به‌روزرسانی داده</span></div>
         <div class="stats-grid" id="summary-cards">
           <article class="stat-card"><span>دارایی‌های دریافت‌شده</span><strong id="asset-count">۰</strong><small>از API</small></article>
           <article class="stat-card"><span>اخبار دریافتی</span><strong id="news-count">۰</strong><small>از ورک‌فلو</small></article>
           <article class="stat-card"><span>آخرین دریافت</span><strong id="data-age">—</strong><small>زمان ثبت‌شده در داده</small></article>
         </div>
         <div class="content-grid">
-          <article class="panel chart-panel"><div class="panel-head"><div><h3>روند قیمت</h3><p id="chart-subtitle">پس از اتصال تاریخچه نمایش داده می‌شود</p></div><select id="chart-asset" aria-label="انتخاب دارایی"><option value="">انتخاب دارایی</option></select></div><div class="chart-wrap"><canvas id="price-chart" aria-label="نمودار قیمت"></canvas><div id="chart-empty" class="empty-state">برای نمایش نمودار واقعی، API باید آرایهٔ history شامل زمان و قیمت برگرداند.</div></div></article>
+          <article class="panel chart-panel"><div class="panel-head"><div><h3>روند قیمت</h3><p id="chart-subtitle">پس از اتصال تاریخچه نمایش داده می‌شود</p></div><select id="chart-asset" aria-label="انتخاب دارایی"><option value="">انتخاب دارایی</option></select></div><div class="chart-wrap"><canvas id="price-chart" aria-label="نمودار قیمت"></canvas><div id="chart-empty" class="empty-state">برای نمایش نمودار، دادهٔ دارایی باید تاریخچه‌ای شامل زمان و قیمت داشته باشد.</div></div></article>
           <article class="panel"><div class="panel-head"><div><h3>دارایی‌ها</h3><p>آخرین قیمت دریافتی</p></div><a href="#assets" class="text-link" data-view="assets">مشاهده همه</a></div><div id="top-assets" class="asset-list"><div class="empty-state">داده‌ای دریافت نشده است.</div></div></article>
         </div>
         <article class="panel"><div class="panel-head"><div><h3>آخرین اخبار</h3><p>عنوان و لینک خبرهای ارسال‌شده توسط ورک‌فلو</p></div><a href="#news" class="text-link" data-view="news">همه اخبار</a></div><div id="latest-news" class="news-list"><div class="empty-state">خبری دریافت نشده است.</div></div></article>

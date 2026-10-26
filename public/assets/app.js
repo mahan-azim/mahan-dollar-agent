@@ -87,7 +87,7 @@
   }
   function render(raw) {
     const d = normalize(raw); state.payload = d;
-    $("#connection-label").textContent = "API متصل است";
+    $("#connection-label").textContent = "نمایش داده‌های بازار";
     $(".status-dot").style.background = "var(--cyan)";
     $("#last-updated").textContent = "آخرین به‌روزرسانی: " + dateText(d.generated_at);
     $("#asset-count").textContent = money(d.assets.length);
@@ -110,7 +110,7 @@
     state.selectedAsset = selectedIndex;
     renderChart(selectedIndex !== "" ? d.assets[Number(selectedIndex)] : null);
     $("#error-banner").classList.add("hidden");
-    $("#demo-banner").classList.add("hidden");
+    $("#demo-banner").classList.toggle("hidden", Boolean(d.generated_at || d.assets.length || d.news.length || d.analysis));
   }
   async function refresh() {
     const button = $("#refresh-btn"); button.disabled = true; button.textContent = "در حال دریافت…";
@@ -120,9 +120,9 @@
       if (!response.ok) throw new Error(data.error || `خطای API (${response.status})`);
       render(data);
     } catch (err) {
-      $("#connection-label").textContent = "API در دسترس نیست";
+      $("#connection-label").textContent = "داده‌های بازار موقتاً در دسترس نیستند";
       $(".status-dot").style.background = "var(--red)";
-      $("#error-banner").textContent = `اتصال به API ناموفق بود: ${err.message}. سرور Railway و تنظیمات ارسال n8n را بررسی کنید.`;
+      $("#error-banner").textContent = "در حال حاضر دریافت تازه‌ترین داده‌های بازار ممکن نیست. لطفاً کمی بعد دوباره امتحان کن.";
       $("#error-banner").classList.remove("hidden");
       $("#demo-banner").classList.remove("hidden");
     } finally { button.disabled = false; button.textContent = "↻ بروزرسانی"; }
