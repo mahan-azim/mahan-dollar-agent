@@ -2,6 +2,99 @@
   "use strict";
   const $ = (s) => document.querySelector(s);
   const state = { payload: null, chart: null, selectedAsset: "", authClient: null, authConfigured: false, currentUser: null, isAdmin: false, isOwner: false, otpTarget: null, workflowEnabled: null };
+
+  const themeSettings = { mode: "dark", color: "#00ffc4" };
+  const themeStorageKey = "mahan-market-agent-theme";
+  function normalizeHexColor(value) {
+    const raw = String(value ?? "").trim();
+    if (!/^#(?:[0-9a-f]{3}|[0-9a-f]{6})$/i.test(raw)) return "";
+    return raw.length === 4 ? "#" + [...raw.slice(1)].map(ch => ch + ch).join("").toLowerCase() : raw.toLowerCase();
+  }
+  function hexToRgba(hex, alpha = 0.12) {
+    const color = normalizeHexColor(hex) || "#00ffc4";
+    const number = Number.parseInt(color.slice(1), 16);
+    const red = (number >> 16) & 255, green = (number >> 8) & 255, blue = number & 255;
+    return `rgba(${red},${green},${blue},${alpha})`;
+  }
+  function setThemeMessage(message, kind = "") {
+    const node = $("#theme-settings-message");
+    if (!node) return;
+    node.textContent = message;
+    node.dataset.kind = kind;
+  }
+  function applyThemeSettings(persist = true) {
+    document.body.dataset.themeMode = themeSettings.mode;
+    document.documentElement.style.setProperty("--cyan", themeSettings.color);
+    document.documentElement.style.setProperty("--theme-accent", themeSettings.color);
+    const isLight = themeSettings.mode === "light";
+    const toggle = $("#theme-mode-toggle");
+    if (toggle) toggle.checked = isLight;
+    const title = $("#theme-mode-title");
+    const description = $("#theme-mode-description");
+    const badge = $("#theme-mode-badge");
+    if (title) title.textContent = isLight ? "حالت روشن" : "حالت تاریک";
+    if (description) description.textContent = isLight ? "پس‌زمینهٔ روشن برای محیط‌های پرنور" : "پس‌زمینهٔ تیره برای استفاده در محیط کم‌نور";
+    if (badge) badge.textContent = isLight ? "حالت روشن" : "حالت تاریک";
+    const input = $("#custom-theme-color");
+    if (input) input.value = themeSettings.color.toUpperCase();
+    const preview = $("#custom-color-preview");
+    if (preview) preview.style.backgroundColor = themeSettings.color;
+    document.querySelectorAll("[data-theme-color]").forEach(button => {
+      const active = normalizeHexColor(button.dataset.themeColor) === themeSettings.color;
+      button.classList.toggle("active", active);
+      button.setAttribute("aria-pressed", String(active));
+    });
+    const metaTheme = document.querySelector('meta[name="theme-color"]');
+    if (metaTheme) metaTheme.content = isLight ? "#f4f8fb" : "#07111b";
+    if (persist) {
+      try { localStorage.setItem(themeStorageKey, JSON.stringify(themeSettings)); } catch (error) { console.warn("Theme preferences could not be saved:", error); }
+    }
+    if (state.chart && state.payload) {
+      const index = Number(state.selectedAsset);
+      renderChart(state.payload.assets?.[index] || null);
+    }
+  }
+  function initializeThemeSettings() {
+    try {
+      const saved = JSON.parse(localStorage.getItem(themeStorageKey) || "{}");
+      themeSettings.mode = saved.mode === "light" ? "light" : "dark";
+      themeSettings.color = normalizeHexColor(saved.color) || "#00ffc4";
+    } catch (_) {
+      themeSettings.mode = "dark";
+      themeSettings.color = "#00ffc4";
+    }
+    applyThemeSettings(false);
+    $("#theme-mode-toggle")?.addEventListener("change", event => {
+      themeSettings.mode = event.currentTarget.checked ? "light" : "dark";
+      applyThemeSettings();
+      setThemeMessage(themeSettings.mode === "light" ? "حالت روشن فعال شد." : "حالت تاریک فعال شد.");
+    });
+    document.querySelectorAll("[data-theme-color]").forEach(button => button.addEventListener("click", () => {
+      themeSettings.color = normalizeHexColor(button.dataset.themeColor) || "#00ffc4";
+      applyThemeSettings();
+      setThemeMessage("رنگ اصلی سایت تغییر کرد.");
+    }));
+    $("#custom-theme-color")?.addEventListener("input", event => {
+      const color = normalizeHexColor(event.currentTarget.value);
+      const preview = $("#custom-color-preview");
+      if (preview) {
+        preview.style.backgroundColor = color || "transparent";
+        preview.classList.toggle("invalid", !color);
+      }
+    });
+    $("#theme-color-apply")?.addEventListener("click", () => {
+      const color = normalizeHexColor($("#custom-theme-color")?.value);
+      if (!color) {
+        setThemeMessage("کد رنگ معتبر نیست. نمونهٔ درست: #00FFC4", "error");
+        $("#custom-theme-color")?.focus();
+        return;
+      }
+      themeSettings.color = color;
+      applyThemeSettings();
+      setThemeMessage("رنگ سفارشی با موفقیت اعمال شد.");
+    });
+  }
+  initializeThemeSettings();
   const money = (value) => {
     if (value === null || value === undefined || value === "") return "—";
     const n = Number(String(value).replaceAll(",", ""));
@@ -92,7 +185,7 @@
       canvas.classList.add("hidden"); empty.classList.remove("hidden"); return;
     }
     canvas.classList.remove("hidden"); empty.classList.add("hidden");
-    state.chart = new Chart(canvas, {type:"line", data:{labels:parsed.map(p=>p.label),datasets:[{label:asset.name,data:parsed.map(p=>p.value),borderColor:"#00ffc4",backgroundColor:"rgba(0,255,196,.08)",fill:true,tension:.3,pointRadius:1.5,borderWidth:2}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{x:{ticks:{color:"#8299a8",maxTicksLimit:6},grid:{color:"rgba(130,153,168,.08)"}},y:{ticks:{color:"#8299a8"},grid:{color:"rgba(130,153,168,.1)"}}}}});
+    state.chart = new Chart(canvas, {type:"line", data:{labels:parsed.map(p=>p.label),datasets:[{label:asset.name,data:parsed.map(p=>p.value),borderColor:themeSettings.color,backgroundColor:hexToRgba(themeSettings.color,0.12),fill:true,tension:.3,pointRadius:1.5,borderWidth:2}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{x:{ticks:{color:"#8299a8",maxTicksLimit:6},grid:{color:"rgba(130,153,168,.08)"}},y:{ticks:{color:"#8299a8"},grid:{color:"rgba(130,153,168,.1)"}}}}});
   }
   function render(raw) {
     const d = normalize(raw); state.payload = d;
@@ -102,8 +195,6 @@
     $("#asset-count").textContent = money(d.assets.length);
     $("#news-count").textContent = money(d.news.length);
     $("#data-age").textContent = d.generated_at ? dateText(d.generated_at) : "—";
-    $("#top-assets").innerHTML = renderAssets(d.assets.slice(0,5));
-    $("#all-assets").innerHTML = d.assets.length ? `<table><thead><tr><th>نام</th><th>نماد</th><th>قیمت</th><th>تغییر</th></tr></thead><tbody>${d.assets.map(a=>`<tr><td>${escapeHtml(a.name)}</td><td dir="ltr">${escapeHtml(a.symbol)}</td><td>${escapeHtml(money(a.price))} ${escapeHtml(a.unit)}</td><td class="${changeClass(a.change)}">${escapeHtml(changeText(a.change))}</td></tr>`).join("")}</tbody></table>` : '<div class="empty-state">دارایی‌ای از API دریافت نشده است.</div>';
     $("#forecast-table").innerHTML = d.forecasts.length ? `<table><thead><tr><th>اسم</th><th>قیمت گذشته</th><th>قیمت فعلی</th><th>قیمت پیش‌بینی‌شده</th><th>اولویت تأثیر در بازار</th></tr></thead><tbody>${d.forecasts.map(f=>`<tr><td>${escapeHtml(f.name)}</td><td>${escapeHtml(f.past == null || f.past === "" ? "داده موجود نیست" : money(f.past))}</td><td>${escapeHtml(f.current == null || f.current === "" ? "داده موجود نیست" : money(f.current))}</td><td>${escapeHtml(f.predicted == null || f.predicted === "" ? "داده موجود نیست" : money(f.predicted))}</td><td>${escapeHtml(f.priority || "داده موجود نیست")}</td></tr>`).join("")}</tbody></table>` : '<div class="empty-state">هنوز پیش‌بینی ساختاریافته‌ای از n8n دریافت نشده است.</div>';
     $("#latest-news").innerHTML = renderNews(d.news, 4);
     $("#all-news").innerHTML = renderNews(d.news);
