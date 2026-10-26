@@ -1,0 +1,45 @@
+name: Validate Mahan Market Agent
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Check JavaScript syntax
+        run: |
+          node --check server.mjs
+          node --check public/assets/app.js
+          node --check scripts/send-test.mjs
+          node --check scripts/generate-secret.mjs
+          node --check n8n/Code-Prepare-Signed-Push.js
+      - name: Smoke test public page and protected admin API
+        shell: bash
+        run: |
+          set -euo pipefail
+          DATA_PATH="$(mktemp -d)"
+          PORT=39127 DATA_DIR="$DATA_PATH" node server.mjs > /tmp/mahan-market-agent.log 2>&1 &
+          SERVER_PID=$!
+          trap 'kill "$SERVER_PID" 2>/dev/null || true; rm -rf "$DATA_PATH"' EXIT
+          for i in $(seq 1 30); do
+            if curl --silent --fail http://127.0.0.1:39127/health > /tmp/mahan-health.json; then break; fi
+            sleep 1
+          done
+          grep -q '"ok":true' /tmp/mahan-health.json
+          curl --silent --fail http://127.0.0.1:39127/ > /tmp/mahan-home.html
+          grep -q 'Mahan Market Agent' /tmp/mahan-home.html
+          test "$(curl --silent --output /dev/null --write-out '%{http_code}' http://127.0.0.1:39127/api/admin/overview)" = "401"
+          test "$(curl --silent --output /dev/null --write-out '%{http_code}' http://127.0.0.1:39127/api/admin/admins)" = "401"
+          test "$(curl --silent --output /dev/null --write-out '%{http_code}' http://127.0.0.1:39127/api/admin/workflow)" = "401"
+          curl --silent --fail http://127.0.0.1:39127/assets/mahan-market-agent.svg > /tmp/mahan-logo.svg
+          grep -q '<svg' /tmp/mahan-logo.svg
