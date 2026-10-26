@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" role="img" aria-labelledby="title">
+  <title id="title">Mahan Market Agent</title>
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#07111b"/><stop offset="1" stop-color="#11273e"/></linearGradient>
+    <linearGradient id="cyan" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#00ffc4"/><stop offset=".55" stop-color="#00d9ff"/><stop offset="1" stop-color="#6966ff"/></linearGradient>
+  </defs>
+  <rect width="128" height="128" rx="29" fill="url(#bg)"/>
+  <path d="M24 91V37c0-5 6-7 10-3l30 31 30-31c4-4 10-2 10 3v54" fill="none" stroke="url(#cyan)" stroke-width="13" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M50 80l13-13 12 7 18-22" fill="none" stroke="#e8ffff" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M84 52h9v9" fill="none" stroke="#e8ffff" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
+  <rect x="44" y="98" width="9" height="13" rx="2" fill="#00ffc4"/>
+  <rect x="60" y="91" width="9" height="20" rx="2" fill="#00d9ff"/>
+  <rect x="76" y="84" width="9" height="27" rx="2" fill="#6966ff"/>
+</svg>

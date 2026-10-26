@@ -1,7 +1,7 @@
 (() => {
   "use strict";
   const $ = (s) => document.querySelector(s);
-  const state = { payload: null, chart: null, selectedAsset: "" };
+  const state = { payload: null, chart: null, selectedAsset: "", authClient: null, authConfigured: false, currentUser: null, isAdmin: false, isOwner: false, otpTarget: null, workflowEnabled: null };
   const money = (value) => {
     if (value === null || value === undefined || value === "") return "—";
     const n = Number(String(value).replaceAll(",", ""));
@@ -127,12 +127,369 @@
       $("#demo-banner").classList.remove("hidden");
     } finally { button.disabled = false; button.textContent = "↻ بروزرسانی"; }
   }
+
+  function setAuthMessage(message, kind = "") {
+    const box = $("#auth-message");
+    if (!box) return;
+    box.textContent = message || "";
+    box.classList.toggle("hidden", !message);
+    box.classList.toggle("notice-warn", kind === "warn");
+    if (kind === "error") box.style.borderColor = "#623241";
+    else box.style.borderColor = "";
+  }
+
+  function openAuth() {
+    $("#auth-modal").classList.remove("hidden");
+    $("#auth-modal").setAttribute("aria-hidden", "false");
+    setAuthMessage(state.authConfigured ? "" : "ورود هنوز به سرویس احراز هویت وصل نشده است. مدیر سامانه باید متغیرهای SUPABASE_URL و SUPABASE_ANON_KEY را در Railway تنظیم کند.");
+    if (state.currentUser) {
+      $("#auth-signed-in").classList.remove("hidden");
+      $("#auth-methods").classList.add("hidden");
+      $("#auth-account-label").textContent = `واردشده با: ${state.currentUser.email || state.currentUser.phone || "حساب کاربری"}${state.isAdmin ? " · دسترسی مدیر" : " · دسترسی عادی"}`;
+    } else {
+      $("#auth-signed-in").classList.add("hidden");
+      $("#auth-methods").classList.remove("hidden");
+    }
+  }
+
+  function closeAuth() {
+    $("#auth-modal").classList.add("hidden");
+    $("#auth-modal").setAttribute("aria-hidden", "true");
+  }
+
+  function updateAdminVisibility() {
+    document.querySelectorAll("[data-admin-only]").forEach(el => el.classList.toggle("hidden", !state.isAdmin));
+    $("#view-admin").classList.toggle("hidden", !state.isAdmin);
+    $("#auth-open").textContent = state.isAdmin ? "پنل مدیریت" : state.currentUser ? "حساب کاربری" : "ورود / پنل مدیریت";
+    if (state.currentUser) {
+      $("#auth-signed-in").classList.remove("hidden");
+      $("#auth-methods").classList.add("hidden");
+      $("#auth-account-label").textContent = `واردشده با: ${state.currentUser.email || state.currentUser.phone || "حساب کاربری"}${state.isAdmin ? " · دسترسی مدیر" : " · دسترسی عادی"}`;
+    } else {
+      $("#auth-signed-in").classList.add("hidden");
+      $("#auth-methods").classList.remove("hidden");
+    }
+    if (state.isAdmin && location.hash === "#admin") {
+      document.querySelector('[data-view="admin"]')?.click();
+    } else if (!state.isAdmin && location.hash === "#admin") {
+      history.replaceState(null, "", "#dashboard");
+    }
+  }
+
+  function apiHeaders(session, extra = {}) {
+    const headers = { Accept: "application/json", ...extra };
+    if (session?.access_token) headers.Authorization = `Bearer ${session.access_token}`;
+    return headers;
+  }
+
+  async function authApi(path, options = {}) {
+    if (!state.authClient) throw new Error("احراز هویت تنظیم نشده است.");
+    const { data } = await state.authClient.auth.getSession();
+    if (!data?.session?.access_token) throw new Error("نشست معتبر نیست؛ دوباره وارد شو.");
+    const headers = apiHeaders(data.session, options.body ? { "Content-Type": "application/json", ...(options.headers || {}) } : options.headers || {});
+    const response = await fetch(path, { ...options, headers, cache: "no-store" });
+    const body = await response.json().catch(() => ({}));
+    if (!response.ok) throw new Error(body.error || `خطای سرور (${response.status})`);
+    return body;
+  }
+
+  async function syncAuthSession(session) {
+    if (!session || !state.authClient) {
+      state.currentUser = null; state.isAdmin = false; state.isOwner = false;
+      updateAdminVisibility();
+      return;
+    }
+    try {
+      const response = await fetch("/api/auth/me", { headers: apiHeaders(session), cache: "no-store" });
+      const body = await response.json().catch(() => ({}));
+      state.currentUser = body.user || { email: session.user?.email || null, phone: session.user?.phone || null };
+      state.isAdmin = response.ok && Boolean(body.isAdmin);
+      state.isOwner = response.ok && Boolean(body.isOwner);
+      updateAdminVisibility();
+      if (state.isAdmin) await loadAdminPanel();
+      if (state.currentUser && !state.isAdmin && !$("#auth-modal").classList.contains("hidden")) {
+        setAuthMessage("ورود موفق بود، اما این حساب دسترسی مدیر ندارد. فقط مالک می‌تواند ایمیل حساب را به فهرست مدیران اضافه کند.", "warn");
+      }
+    } catch (error) {
+      state.currentUser = { email: session.user?.email || null, phone: session.user?.phone || null };
+      state.isAdmin = false; state.isOwner = false; updateAdminVisibility();
+      console.warn("Could not resolve account role:", error.message);
+    }
+  }
+
+  async function loadAuthConfig() {
+    try {
+      const response = await fetch("/api/auth/config", { cache: "no-store" });
+      const config = await response.json();
+      state.authConfigured = Boolean(config.configured && window.supabase?.createClient);
+      if (!state.authConfigured) {
+        document.querySelectorAll("[data-oauth], #email-otp-form button, #phone-otp-form button").forEach(el => { el.disabled = true; });
+        setAuthMessage("ورود هنوز تنظیم نشده است. در Railway متغیرهای SUPABASE_URL و SUPABASE_ANON_KEY را تنظیم و در Supabase روش‌های ورود را فعال کن.");
+        return;
+      }
+      state.authClient = window.supabase.createClient(config.supabaseUrl, config.supabaseAnonKey, {
+        auth: { persistSession: true, autoRefreshToken: true, detectSessionInUrl: true }
+      });
+      state.authClient.auth.onAuthStateChange((_event, session) => {
+        window.setTimeout(() => { syncAuthSession(session); }, 0);
+      });
+      const { data, error } = await state.authClient.auth.getSession();
+      if (error) throw error;
+      await syncAuthSession(data?.session || null);
+    } catch (error) {
+      state.authConfigured = false;
+      setAuthMessage("آماده‌سازی ورود ناموفق بود. تنظیمات احراز هویت در Railway و Supabase را بررسی کن.");
+      console.warn("Auth startup failed:", error.message);
+    }
+  }
+
+  async function submitOAuth(provider) {
+    if (!state.authClient) return setAuthMessage("سرویس ورود هنوز تنظیم نشده است.", "warn");
+    try {
+      setAuthMessage("در حال انتقال به ارائه‌دهندهٔ ورود…");
+      const options = { redirectTo: window.location.origin };
+      if (provider === "azure") options.scopes = "email";
+      const { error } = await state.authClient.auth.signInWithOAuth({ provider, options });
+      if (error) throw error;
+    } catch (error) {
+      setAuthMessage(`ورود انجام نشد: ${error.message}`, "error");
+    }
+  }
+
+  $("#email-otp-form").addEventListener("submit", async event => {
+    event.preventDefault();
+    const email = $("#auth-email").value.trim().toLowerCase();
+    if (!state.authClient) return setAuthMessage("سرویس ورود هنوز تنظیم نشده است.", "warn");
+    try {
+      const { error } = await state.authClient.auth.signInWithOtp({ email, options: { shouldCreateUser: true } });
+      if (error) throw error;
+      state.otpTarget = { kind: "email", value: email };
+      $("#verify-otp-form").classList.remove("hidden");
+      $("#email-otp-form").classList.add("hidden");
+      $("#phone-otp-form").classList.add("hidden");
+      $(".oauth-grid").classList.add("hidden");
+      setAuthMessage(`کد ورود به ${email} ارسال شد. صندوق ورودی و پوشهٔ هرزنامه را بررسی کن.`);
+      $("#auth-otp").focus();
+    } catch (error) {
+      setAuthMessage(`ارسال کد ایمیل ناموفق بود: ${error.message}`, "error");
+    }
+  });
+
+  $("#phone-otp-form").addEventListener("submit", async event => {
+    event.preventDefault();
+    const phone = $("#auth-phone").value.trim();
+    if (!state.authClient) return setAuthMessage("سرویس ورود هنوز تنظیم نشده است.", "warn");
+    if (!/^\+[1-9]\d{7,14}$/.test(phone)) return setAuthMessage("شماره را با کد کشور وارد کن؛ مانند +98912xxxxxxx.", "warn");
+    try {
+      const { error } = await state.authClient.auth.signInWithOtp({ phone, options: { shouldCreateUser: true } });
+      if (error) throw error;
+      state.otpTarget = { kind: "phone", value: phone };
+      $("#verify-otp-form").classList.remove("hidden");
+      $("#email-otp-form").classList.add("hidden");
+      $("#phone-otp-form").classList.add("hidden");
+      $(".oauth-grid").classList.add("hidden");
+      setAuthMessage(`کد ورود به شمارهٔ ${phone} ارسال شد.`);
+      $("#auth-otp").focus();
+    } catch (error) {
+      setAuthMessage(`ارسال پیامک ناموفق بود: ${error.message}. تنظیمات ارائه‌دهندهٔ SMS را بررسی کن.`, "error");
+    }
+  });
+
+  $("#verify-otp-form").addEventListener("submit", async event => {
+    event.preventDefault();
+    if (!state.authClient || !state.otpTarget) return setAuthMessage("ابتدا کد ایمیل یا پیامک را درخواست کن.", "warn");
+    const token = $("#auth-otp").value.trim();
+    try {
+      const params = state.otpTarget.kind === "email"
+        ? { email: state.otpTarget.value, token, type: "email" }
+        : { phone: state.otpTarget.value, token, type: "sms" };
+      const { data, error } = await state.authClient.auth.verifyOtp(params);
+      if (error) throw error;
+      state.otpTarget = null;
+      $("#verify-otp-form").classList.add("hidden");
+      $("#email-otp-form").classList.remove("hidden");
+      $("#phone-otp-form").classList.remove("hidden");
+      $(".oauth-grid").classList.remove("hidden");
+      $("#auth-otp").value = "";
+      setAuthMessage("ورود با موفقیت انجام شد.");
+      await syncAuthSession(data.session);
+    } catch (error) {
+      setAuthMessage(`کد معتبر نیست یا منقضی شده است: ${error.message}`, "error");
+    }
+  });
+
+  $("#auth-back").addEventListener("click", () => {
+    state.otpTarget = null;
+    $("#verify-otp-form").classList.add("hidden");
+    $("#email-otp-form").classList.remove("hidden");
+    $("#phone-otp-form").classList.remove("hidden");
+    $(".oauth-grid").classList.remove("hidden");
+    setAuthMessage("");
+  });
+
+  document.querySelectorAll("[data-oauth]").forEach(button => {
+    button.addEventListener("click", () => submitOAuth(button.dataset.oauth));
+  });
+
+  $("#auth-open").addEventListener("click", () => {
+    if (state.isAdmin) {
+      document.querySelector('[data-view="admin"]')?.click();
+      return;
+    }
+    openAuth();
+  });
+  $("#auth-close").addEventListener("click", closeAuth);
+  $("#auth-dashboard").addEventListener("click", closeAuth);
+  $("#auth-modal").addEventListener("click", event => { if (event.target === $("#auth-modal")) closeAuth(); });
+  $("#auth-signout").addEventListener("click", async () => {
+    if (!state.authClient) return;
+    const { error } = await state.authClient.auth.signOut();
+    if (error) setAuthMessage(`خروج ناموفق بود: ${error.message}`, "error");
+    else { state.currentUser = null; state.isAdmin = false; state.isOwner = false; closeAuth(); updateAdminVisibility(); }
+  });
+
+  function setStatus(id, text, kind = "") {
+    const el = $(id);
+    if (!el) return;
+    el.textContent = text;
+    el.classList.remove("positive", "negative", "neutral");
+    if (kind) el.classList.add(kind);
+  }
+
+  async function loadAdminPanel() {
+    if (!state.isAdmin || !state.authClient) return;
+    try {
+      const overview = await authApi("/api/admin/overview");
+      setStatus("#admin-auth-status", overview.services.authenticationConfigured ? "تنظیم شده" : "نیازمند تنظیم", overview.services.authenticationConfigured ? "positive" : "negative");
+      setStatus("#admin-api-status", overview.api.signingKeyConfigured ? "فعال" : "تنظیم نشده", overview.api.signingKeyConfigured ? "positive" : "negative");
+      setStatus("#admin-data-status", overview.data.hasSnapshot ? "داده موجود است" : "بدون داده", overview.data.hasSnapshot ? "positive" : "neutral");
+      $("#admin-data-detail").textContent = overview.data.hasSnapshot
+        ? `${money(overview.data.assetCount)} دارایی · ${money(overview.data.newsCount)} خبر · ${dateText(overview.data.generatedAt)}`
+        : "هنوز بسته‌ای از n8n دریافت نشده است.";
+      $("#admin-api-detail").textContent = overview.api.lastReceivedAt
+        ? `آخرین دریافت: ${dateText(overview.api.lastReceivedAt)}`
+        : "هنوز درخواستی پذیرفته نشده است.";
+      $("#admin-auth-detail").textContent = `حساب: ${overview.account.email || overview.account.phone || "نامشخص"}`;
+      $("#admin-services").innerHTML = [
+        [ "Supabase Auth", overview.services.authenticationConfigured ],
+        [ "API مدیریت n8n", overview.services.n8nManagementConfigured ],
+        [ "کلید امضای Push", overview.api.signingKeyConfigured ],
+        [ "مسیر داده DATA_DIR", overview.services.persistentVolumeConfigured ]
+      ].map(([label, ok]) => `<span class="source-chip ${ok ? "status-ok" : "status-warn"}">${escapeHtml(label)}: ${ok ? "تنظیم شده" : "تنظیم نشده"}</span>`).join("");
+      state.isOwner = Boolean(overview.account.isOwner);
+      $("#owner-admin-panel").classList.toggle("hidden", !state.isOwner);
+      await loadWorkflowStatus();
+      if (state.isOwner) await loadAdmins();
+    } catch (error) {
+      $("#admin-services").innerHTML = `<span class="source-chip status-error">${escapeHtml(error.message)}</span>`;
+    }
+  }
+
+  async function loadWorkflowStatus() {
+    try {
+      const result = await authApi("/api/admin/workflow");
+      state.workflowEnabled = result.active === null ? null : Boolean(result.active);
+      if (!result.configured) {
+        $("#workflow-badge").textContent = "اتصال تنظیم نشده";
+        $("#workflow-badge").className = "source-chip status-warn";
+        $("#workflow-help").textContent = "برای کنترل واقعی n8n، متغیرهای N8N_API_BASE_URL، N8N_API_KEY و N8N_WORKFLOW_ID را در Railway ثبت کن.";
+        $("#workflow-toggle").disabled = true;
+        $("#workflow-toggle").textContent = "نیازمند تنظیم API n8n";
+        return;
+      }
+      if (result.available === false) {
+        $("#workflow-badge").textContent = "دسترسی ناموفق";
+        $("#workflow-badge").className = "source-chip status-error";
+        $("#workflow-help").textContent = result.message || "وضعیت ورک‌فلو خوانده نشد.";
+        $("#workflow-toggle").disabled = true;
+        $("#workflow-toggle").textContent = "اتصال n8n را بررسی کن";
+        return;
+      }
+      $("#workflow-badge").textContent = result.active ? "فعال" : "غیرفعال";
+      $("#workflow-badge").className = `source-chip ${result.active ? "status-ok" : "status-warn"}`;
+      $("#workflow-help").textContent = `${result.name || "n8n workflow"} · شناسه: ${result.id || "—"} · وضعیت از API واقعی n8n دریافت شده است.`;
+      $("#workflow-toggle").disabled = false;
+      $("#workflow-toggle").textContent = result.active ? "غیرفعال‌کردن ورک‌فلو" : "فعال‌کردن ورک‌فلو";
+    } catch (error) {
+      $("#workflow-badge").textContent = "خطا";
+      $("#workflow-badge").className = "source-chip status-error";
+      $("#workflow-help").textContent = error.message;
+      $("#workflow-toggle").disabled = true;
+      $("#workflow-toggle").textContent = "وضعیت نامشخص";
+    }
+  }
+
+  async function loadAdmins() {
+    try {
+      const result = await authApi("/api/admin/admins");
+      $("#admins-list").innerHTML = result.admins.map(admin => `
+        <div class="admin-row">
+          <div><div class="admin-row-email">${escapeHtml(admin.email)}</div><small>${admin.owner ? "مالک اصلی، قابل حذف نیست" : "مدیر مجاز"}</small></div>
+          ${admin.owner ? "" : `<button type="button" class="admin-remove" data-remove-admin="${escapeHtml(admin.email)}">حذف دسترسی</button>`}
+        </div>`).join("");
+    } catch (error) {
+      $("#admins-list").innerHTML = `<div class="empty-state">${escapeHtml(error.message)}</div>`;
+    }
+  }
+
+  $("#admin-add-form").addEventListener("submit", async event => {
+    event.preventDefault();
+    if (!state.isOwner) return;
+    const email = $("#admin-email-input").value.trim().toLowerCase();
+    const box = $("#admin-action-message");
+    try {
+      const result = await authApi("/api/admin/admins", { method: "POST", body: JSON.stringify({ email }) });
+      box.textContent = result.message || "مدیر اضافه شد.";
+      box.classList.remove("hidden", "notice-warn");
+      $("#admin-email-input").value = "";
+      await loadAdmins();
+    } catch (error) {
+      box.textContent = error.message;
+      box.classList.remove("hidden");
+      box.classList.add("notice-warn");
+    }
+  });
+
+  $("#admins-list").addEventListener("click", async event => {
+    const button = event.target.closest("[data-remove-admin]");
+    if (!button || !state.isOwner) return;
+    const email = button.dataset.removeAdmin;
+    if (!window.confirm(`دسترسی مدیریتی ${email} حذف شود؟`)) return;
+    try {
+      await authApi(`/api/admin/admins/${encodeURIComponent(email)}`, { method: "DELETE" });
+      await loadAdmins();
+    } catch (error) {
+      const box = $("#admin-action-message");
+      box.textContent = error.message;
+      box.classList.remove("hidden");
+      box.classList.add("notice-warn");
+    }
+  });
+
+  $("#workflow-toggle").addEventListener("click", async () => {
+    if (!state.isAdmin || state.workflowEnabled === null) return;
+    const button = $("#workflow-toggle");
+    button.disabled = true;
+    try {
+      await authApi("/api/admin/workflow", { method: "POST", body: JSON.stringify({ enabled: !state.workflowEnabled }) });
+      await loadWorkflowStatus();
+    } catch (error) {
+      $("#workflow-help").textContent = error.message;
+      $("#workflow-badge").textContent = "تغییر ناموفق";
+      $("#workflow-badge").className = "source-chip status-error";
+      button.disabled = false;
+    }
+  });
+  $("#admin-refresh").addEventListener("click", loadAdminPanel);
+  loadAuthConfig();
+
   document.querySelectorAll("[data-view]").forEach(link => link.addEventListener("click", event => {
     event.preventDefault(); const view = link.dataset.view;
+    if (view === "admin" && !state.isAdmin) { openAuth(); setAuthMessage("برای ورود به پنل مدیریت، با ایمیلی که مدیر اصلی مجاز کرده وارد شو.", "warn"); return; }
     document.querySelectorAll(".view").forEach(el=>el.classList.toggle("active", el.id === `view-${view}`));
     document.querySelectorAll(".nav-link").forEach(el=>el.classList.toggle("active", el.dataset.view === view));
-    const titles = {dashboard:"نمای کلی بازار",assets:"دارایی‌ها",news:"اخبار بازار",analysis:"تحلیل ورک‌فلو"};
-    $("#page-title").textContent = titles[view] || "ماهان مارکت";
+    const titles = {dashboard:"نمای کلی بازار",assets:"دارایی‌ها",news:"اخبار بازار",analysis:"تحلیل ورک‌فلو",admin:"پنل مدیریت"};
+    $("#page-title").textContent = titles[view] || "ماهان مارکت ایجنت";
     history.replaceState(null,"",`#${view}`);
   }));
   $("#refresh-btn").addEventListener("click", refresh);

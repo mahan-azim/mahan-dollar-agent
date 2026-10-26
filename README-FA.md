@@ -1,11 +1,12 @@
-# ماهان مارکت | نسخهٔ آمادهٔ Railway
+# Mahan Market Agent | نسخهٔ Railway
 
-این پروژه برای اجرا به‌عنوان یک سرویس Node.js روی Railway آماده شده است. معماری **Push** است: پس از آماده‌شدن تحلیل، n8n خودش با `POST /api/publish` داده را به سایت می‌فرستد. سایت فقط دادهٔ تأییدشده را ذخیره و در داشبورد نمایش می‌دهد؛ تحلیل هوش مصنوعی داخل سایت انجام نمی‌شود.
+این پروژه با نام **Mahan Market Agent** برای اجرا به‌عنوان سرویس Node.js روی Railway آماده شده است. ورود کاربران و پنل مدیریت از Supabase Auth استفاده می‌کند؛ نام ریپازیتوری mahan-dollar-agent عمداً حفظ شده است. معماری **Push** است: پس از آماده‌شدن تحلیل، n8n خودش با `POST /api/publish` داده را به سایت می‌فرستد. سایت فقط دادهٔ تأییدشده را ذخیره و در داشبورد نمایش می‌دهد؛ تحلیل هوش مصنوعی داخل سایت انجام نمی‌شود.
 
 ## اجزای پروژه
 
-- `server.mjs`: سرور سایت، API دریافت داده، احراز هویت و ذخیره‌سازی.
-- `public/`: HTML، CSS و JavaScript عمومی سایت. هیچ کلید محرمانه‌ای اینجا قرار نمی‌گیرد.
+- `server.mjs`: سرور سایت، API دریافت داده، بررسی نشست Supabase، نقش‌های مدیر و کنترل امن ورک‌فلو.
+- `public/`: HTML، CSS، SVG لوگو و JavaScript عمومی سایت. فقط کلید عمومی Supabase در مرورگر مصرف می‌شود؛ کلیدهای محرمانه در فرانت‌اند قرار نمی‌گیرند.
+- `.env.example`: نمونهٔ متغیرهای محیطی برای توسعهٔ محلی؛ مقادیر واقعی را وارد Git نکن.
 - `n8n/Code-Prepare-Signed-Push.js`: کد آماده‌سازی بسته‌ای که n8n ارسال می‌کند.
 - `scripts/send-test.mjs`: ارسال بستهٔ آزمایشی با امضای معتبر.
 - `scripts/generate-secret.mjs`: تولید کلید تصادفی قوی.
@@ -22,6 +23,44 @@
 
 `GET /api/market` عمداً عمومی و فقط‌خواندنی است تا مرورگر بتواند داشبورد عمومی را نمایش دهد. مسیر تغییر داده یعنی `POST /api/publish` فقط درخواست امضاشده را می‌پذیرد. امضا ثابت نمی‌کند یک خبر از نظر واقعی‌بودن درست است؛ فقط نشان می‌دهد بسته را دارندهٔ کلید مورد اعتماد فرستاده است.
 
+
+## ورود کاربران و کنترل دسترسی مدیر
+
+### روش‌های ورود پشتیبانی‌شده
+
+صفحهٔ ورود شامل Google، Microsoft، Apple، GitHub، کد یک‌بارمصرف ایمیل و کد پیامک است. این گزینه‌ها از طریق Supabase Auth کار می‌کنند. فعال‌کردن هر ارائه‌دهنده در Supabase و ساخت Client ID/Secret از سوی مالک حساب لازم است؛ کد سایت به‌تنهایی نمی‌تواند حساب OAuth یا سرویس پیامک ایجاد کند.
+
+1. در Supabase یک پروژه بساز و از بخش Project Settings مقدار Project URL و کلید عمومی anon/publishable را بردار.
+2. در Authentication → URL Configuration آدرس Railway و http://localhost:3000 را به فهرست Redirect URLs اضافه کن. آدرس callback پایه برای این برنامه همان دامنه است.
+3. در Authentication → Providers، ارائه‌دهندگان Google، Azure (Microsoft)، Apple و GitHub را فعال کن و Client ID/Secret رسمی هرکدام را وارد کن. مستندات: https://supabase.com/docs/guides/auth/social-login
+4. برای کد ایمیل، در قالب ایمیل Supabase از متغیر {{ .Token }} استفاده کن تا پیام شامل کد یک‌بارمصرف باشد؛ لینک پیش‌فرض به‌تنهایی فرم ورود کد را کامل نمی‌کند. مستندات: https://supabase.com/docs/guides/auth/auth-email-passwordless
+5. برای ورود تلفنی، SMS provider و قالب پیامک را در Supabase تنظیم کن. تحویل پیامک نیازمند سرویس پیامک و اعتبار آن است. مستندات: https://supabase.com/docs/guides/auth/phone-login
+
+### نقش‌ها
+
+- مدیر اصلی از متغیر ADMIN_EMAIL تعیین می‌شود؛ پیش‌فرض آن mahaneli1394@gmail.com است. ورود باید به ایمیل تأییدشده منتهی شود.
+- فقط مدیر اصلی اجازهٔ افزودن یا حذف ایمیل مدیران دیگر را دارد.
+- مدیران اضافی هم باید با همان ایمیل تأییدشده وارد شوند؛ صرف داشتن حساب Supabase دسترسی مدیریتی نمی‌دهد.
+- بخش وضعیت API، زمان آخرین ارسال و کنترل ورک‌فلو پشت بررسی نشست و نقش مدیر قرار دارد. کلیدها و توکن‌های سرویس در پاسخ API یا رابط کاربری نمایش داده نمی‌شوند.
+- مسیر GET /api/market عمومی و فقط‌خواندنی باقی می‌ماند تا داشبورد بازار برای بازدیدکنندگان کار کند. مسیر انتشار POST /api/publish فقط Push معتبر با HMAC را می‌پذیرد.
+- مالکیت سرویس Supabase، تنظیمات ارائه‌دهندگان OAuth، SMS و Railway همچنان در پنل‌های خودشان مدیریت می‌شود؛ سایت جایگزین مدیریت Railway نیست.
+
+### تنظیمات محیطی احراز هویت و کنترل n8n
+
+در Railway → Service → Variables این موارد را تنظیم کن:
+
+| نام | مقدار |
+|---|---|
+| ADMIN_EMAIL | mahaneli1394@gmail.com |
+| SUPABASE_URL | Project URL پروژهٔ Supabase |
+| SUPABASE_ANON_KEY | کلید عمومی anon/publishable پروژهٔ Supabase |
+| N8N_API_BASE_URL | آدرس پایهٔ n8n برای کنترل واقعی Workflow |
+| N8N_API_KEY | کلید API با scopeهای workflow:read و workflow:activate |
+| N8N_WORKFLOW_ID | شناسهٔ Workflow قابل‌کنترل |
+
+متغیرهای N8N_API_BASE_URL، N8N_API_KEY و N8N_WORKFLOW_ID برای کنترل واقعی Workflow لازم‌اند. اگر تنظیم نشده باشند، پنل به‌جای وانمودکردن به موفقیت، وضعیت «تنظیم نشده» نشان می‌دهد. در n8n کلید API با کمترین دسترسی لازم بساز؛ مستند رسمی: https://docs.n8n.io/api/authentication/
+
+کلید عمومی Supabase برای استفاده در مرورگر طراحی شده است؛ اما service_role، کلید مدیریت n8n، کلید HMAC و کلیدهای OAuth باید محرمانه بمانند. هرگز این مقادیر را داخل فایل‌های public/ یا Git قرار نده.
 ## تست محلی در ویندوز
 
 نیاز به Node.js نسخهٔ ۲۰٫۶ یا جدیدتر است.
@@ -72,6 +111,12 @@
 
    | نام | مقدار |
    |---|---|
+   | `ADMIN_EMAIL` | `mahaneli1394@gmail.com` |
+   | `SUPABASE_URL` | Project URL پروژهٔ Supabase |
+   | `SUPABASE_ANON_KEY` | کلید عمومی anon/publishable پروژهٔ Supabase |
+   | `N8N_API_BASE_URL` | آدرس پایهٔ n8n برای کنترل واقعی Workflow |
+   | `N8N_API_KEY` | API key با scopeهای `workflow:read` و `workflow:activate` |
+   | `N8N_WORKFLOW_ID` | شناسهٔ Workflow قابل‌کنترل |
    | `N8N_PUSH_SECRET` | کلید تصادفی جدید با حداقل ۳۲ بایت |
    | `N8N_MAX_CLOCK_SKEW_SECONDS` | `300` |
    | `DATA_DIR` | `/data` |
@@ -160,6 +205,9 @@ API بسته‌هایی با فیلدهایی مانند این‌ها را می
 
 - `GET /health`: وضعیت آماده‌به‌کار سرور برای Railway.
 - `GET /api/market`: خواندن آخرین بستهٔ ذخیره‌شده برای داشبورد.
+- `GET /api/auth/config`: فقط تنظیمات عمومی Supabase را به فرانت‌اند می‌دهد؛ هیچ کلید مدیریتی‌ای برنمی‌گرداند.
+- `GET /api/auth/me`: هویت و نقش نشست فعلی را از سمت سرور بررسی می‌کند.
+- `/api/admin/overview`, `/api/admin/workflow`, `/api/admin/admins`: مسیرهای مدیریت که فقط مدیران تأییدشده به آن‌ها دسترسی دارند؛ افزودن/حذف مدیر فقط برای مالک اصلی ممکن است.
 - `POST /api/publish`: انتشار بستهٔ جدید، فقط با سه هدر امضا‌شده.
 
 کلید API سرویس‌های خبر، توکن Telegram یا `N8N_PUSH_SECRET` را داخل `public/` یا کد فرانت‌اند قرار نده. اگر کلیدهای Workflow قبلی جایی عمومی شده‌اند، آن‌ها را rotate کن.

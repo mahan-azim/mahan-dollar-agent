@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 820 190" role="img" aria-labelledby="title">
+  <title id="title">Mahan Market Agent</title>
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#07111b"/><stop offset="1" stop-color="#10253a"/></linearGradient>
+    <linearGradient id="accent" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#00ffc4"/><stop offset=".48" stop-color="#00d9ff"/><stop offset="1" stop-color="#7664ff"/></linearGradient>
+  </defs>
+  <rect width="820" height="190" rx="30" fill="url(#bg)"/>
+  <g transform="translate(28 26)">
+    <rect width="138" height="138" rx="31" fill="#091927" stroke="#214354" stroke-width="2"/>
+    <path d="M25 96V39c0-5 6-7 10-3l30 31 30-31c4-4 10-2 10 3v57" fill="none" stroke="url(#accent)" stroke-width="13" stroke-linecap="round" stroke-linejoin="round"/>
+    <path d="M48 82l15-14 14 8 20-24" fill="none" stroke="#e8ffff" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
+    <path d="M88 52h9v9" fill="none" stroke="#e8ffff" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
+    <rect x="42" y="106" width="9" height="14" rx="2" fill="#00ffc4"/><rect x="58" y="98" width="9" height="22" rx="2" fill="#00d9ff"/><rect x="74" y="90" width="9" height="30" rx="2" fill="#7664ff"/>
+  </g>
+  <text x="198" y="83" fill="#f0fbff" font-family="Arial,sans-serif" font-size="50" font-weight="800" letter-spacing="1">MAHAN</text>
+  <text x="198" y="130" fill="url(#accent)" font-family="Arial,sans-serif" font-size="37" font-weight="700" letter-spacing="2">MARKET AGENT</text>
+  <text x="200" y="158" fill="#9ab0c0" font-family="Arial,sans-serif" font-size="15" letter-spacing="2">SMARTER INSIGHTS · BETTER DECISIONS</text>
+</svg>

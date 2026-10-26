@@ -1,10 +1,12 @@
 {
-  "name": "mahan-market-railway",
+  "name": "mahan-market-agent",
   "version": "1.1.0",
   "private": true,
   "type": "module",
-  "description": "Mahan Market dashboard and signed push API for n8n, deployable to Railway",
-  "engines": { "node": ">=20.6.0" },
+  "description": "Mahan Market Agent dashboard, authenticated admin console, and secure n8n push API for Railway",
+  "engines": {
+    "node": ">=20.6.0"
+  },
   "scripts": {
     "start": "node server.mjs",
     "dev": "node --env-file=.env server.mjs",

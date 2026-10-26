@@ -4,15 +4,18 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="theme-color" content="#07111b">
-  <title>ماهان مارکت | پایش بازار</title>
+  <title>ماهان مارکت ایجنت | پایش بازار</title>
+  <link rel="icon" type="image/svg+xml" href="/assets/mahan-market-agent.svg">
   <link rel="stylesheet" href="/assets/style.css">
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
 <body>
   <div class="app-shell">
     <aside class="sidebar">
-      <a class="brand" href="/" aria-label="ماهان مارکت">
-        <span class="brand-mark">M</span><span><b>MAHAN</b><small>MARKET</small></span>
+      <a class="brand" href="/" aria-label="ماهان مارکت ایجنت">
+        <img class="brand-logo" src="/assets/mahan-market-agent.svg" alt="" width="46" height="46">
+        <span><b>MAHAN</b><small>MARKET AGENT</small></span>
       </a>
       <div class="side-label">منوی اصلی</div>
       <nav>
@@ -20,6 +23,7 @@
         <a class="nav-link" href="#assets" data-view="assets"><span>◈</span> دارایی‌ها</a>
         <a class="nav-link" href="#news" data-view="news"><span>≋</span> اخبار بازار</a>
         <a class="nav-link" href="#analysis" data-view="analysis"><span>⌁</span> تحلیل ورک‌فلو</a>
+        <a class="nav-link hidden" href="#admin" data-view="admin" data-admin-only><span>⚙</span> پنل مدیریت</a>
       </nav>
       <div class="sidebar-bottom">
         <span class="status-dot"></span><span id="connection-label">در انتظار اتصال API</span>
@@ -30,7 +34,11 @@
     <main class="main">
       <header class="topbar">
         <div><div class="eyebrow">مرکز پایش بازار</div><h1 id="page-title">نمای کلی بازار</h1></div>
-        <div class="top-actions"><span id="last-updated" class="updated">آخرین به‌روزرسانی: نامشخص</span><button id="refresh-btn" class="button button-outline">↻ بروزرسانی</button></div>
+        <div class="top-actions">
+          <button id="auth-open" class="button button-primary">ورود / پنل مدیریت</button>
+          <span id="last-updated" class="updated">آخرین به‌روزرسانی: نامشخص</span>
+          <button id="refresh-btn" class="button button-outline">↻ بروزرسانی</button>
+        </div>
       </header>
 
       <div id="error-banner" class="notice hidden" role="status"></div>
@@ -66,8 +74,73 @@
         <article class="panel"><div class="panel-head"><h3>اطلاعات منابع</h3></div><div id="sources-list" class="source-list">اطلاعات منبع در دسترس نیست.</div></article>
       </section>
 
-      <footer>MAHAN MARKET <span>•</span> رابط نمایش داده‌های ورک‌فلو</footer>
+      <section class="view hidden" id="view-admin">
+        <div class="section-heading">
+          <div><h2>پنل مدیریت</h2><p>این صفحه فقط برای مدیران تأییدشده در دسترس است.</p></div>
+          <span class="live-pill"><i></i> دسترسی محافظت‌شده</span>
+        </div>
+        <div class="stats-grid admin-stats">
+          <article class="stat-card"><span>احراز هویت</span><strong id="admin-auth-status">بررسی…</strong><small id="admin-auth-detail">Supabase Auth</small></article>
+          <article class="stat-card"><span>کلید دریافت n8n</span><strong id="admin-api-status">بررسی…</strong><small id="admin-api-detail">کلید فقط سمت سرور نگهداری می‌شود</small></article>
+          <article class="stat-card"><span>آخرین بستهٔ دریافت‌شده</span><strong id="admin-data-status">بررسی…</strong><small id="admin-data-detail">وضعیت دادهٔ بازار</small></article>
+        </div>
+        <article class="panel">
+          <div class="panel-head"><div><h3>کنترل ورک‌فلو n8n</h3><p>وضعیت واقعی از API مدیریت n8n خوانده می‌شود.</p></div><span id="workflow-badge" class="source-chip">در حال بررسی</span></div>
+          <p id="workflow-help" class="admin-help">برای کنترل واقعی، آدرس API، کلید مدیریت و شناسهٔ ورک‌فلو باید در Railway تنظیم شده باشند.</p>
+          <div class="admin-actions"><button id="workflow-toggle" class="button button-primary" disabled>بررسی تنظیمات</button><button id="admin-refresh" class="button button-outline">↻ تازه‌سازی وضعیت</button></div>
+        </article>
+        <article class="panel">
+          <div class="panel-head"><div><h3>سلامت سرویس‌ها</h3><p>فقط وضعیت کلی نمایش داده می‌شود، نه مقادیر محرمانه.</p></div></div>
+          <div id="admin-services" class="source-list"><span class="source-chip">در حال بررسی…</span></div>
+        </article>
+        <article class="panel hidden" id="owner-admin-panel">
+          <div class="panel-head"><div><h3>مدیریت مدیران</h3><p>فقط مدیر اصلی می‌تواند حساب‌های دارای دسترسی مدیر را اضافه یا حذف کند.</p></div></div>
+          <form id="admin-add-form" class="admin-add-form">
+            <label for="admin-email-input">ایمیل حساب جدید</label>
+            <div class="admin-add-row"><input id="admin-email-input" type="email" required placeholder="admin@example.com" autocomplete="email"><button class="button button-primary" type="submit">افزودن مدیر</button></div>
+          </form>
+          <div id="admin-action-message" class="notice hidden" role="status"></div>
+          <div id="admins-list" class="admins-list"><div class="empty-state">در حال دریافت فهرست مدیران…</div></div>
+        </article>
+      </section>
+      <footer>MAHAN MARKET AGENT <span>•</span> تحلیل بازار با داده‌های ورک‌فلو</footer>
     </main>
+  </div>
+  <div id="auth-modal" class="auth-overlay hidden" aria-hidden="true">
+    <section class="auth-card" role="dialog" aria-modal="true" aria-labelledby="auth-title">
+      <button type="button" id="auth-close" class="auth-close" aria-label="بستن">×</button>
+      <img src="/assets/mahan-market-agent.svg" class="auth-logo" width="60" height="60" alt="">
+      <h2 id="auth-title">ورود به Mahan Market Agent</h2>
+      <p class="auth-subtitle">برای ورود مدیران، از حساب تأییدشده استفاده کن.</p>
+      <div id="auth-message" class="notice hidden" role="status"></div>
+      <div id="auth-signed-in" class="auth-signed-in hidden">
+        <p id="auth-account-label"></p>
+        <button type="button" id="auth-dashboard" class="button button-primary">رفتن به داشبورد</button>
+        <button type="button" id="auth-signout" class="button button-outline">خروج از حساب</button>
+      </div>
+      <div id="auth-methods">
+        <div class="oauth-grid">
+          <button type="button" class="oauth-button" data-oauth="google"><span class="oauth-icon">G</span> ادامه با Google</button>
+          <button type="button" class="oauth-button" data-oauth="azure"><span class="oauth-icon">▦</span> ادامه با Microsoft</button>
+          <button type="button" class="oauth-button" data-oauth="apple"><span class="oauth-icon">●</span> ادامه با Apple</button>
+          <button type="button" class="oauth-button" data-oauth="github"><span class="oauth-icon">⌘</span> ادامه با GitHub</button>
+        </div>
+        <form id="email-otp-form" class="auth-form">
+          <label for="auth-email">ورود با کد ایمیل</label>
+          <div class="auth-input-row"><input id="auth-email" type="email" placeholder="name@example.com" autocomplete="email" required><button class="button button-primary" type="submit">ارسال کد</button></div>
+        </form>
+        <form id="phone-otp-form" class="auth-form">
+          <label for="auth-phone">ورود با کد پیامک</label>
+          <div class="auth-input-row"><input id="auth-phone" type="tel" placeholder="+98912xxxxxxx" autocomplete="tel" required><button class="button button-primary" type="submit">ارسال کد</button></div>
+        </form>
+        <form id="verify-otp-form" class="auth-form hidden">
+          <label for="auth-otp">کد تأیید ارسال‌شده</label>
+          <div class="auth-input-row"><input id="auth-otp" type="text" inputmode="numeric" autocomplete="one-time-code" minlength="6" maxlength="10" placeholder="کد تأیید" required><button class="button button-primary" type="submit">تأیید و ورود</button></div>
+          <button type="button" id="auth-back" class="text-link auth-back">بازگشت به روش‌های ورود</button>
+        </form>
+      </div>
+      <p class="auth-footnote">ورود موفق به‌تنهایی دسترسی مدیر نمی‌دهد. دسترسی مدیر فقط برای ایمیل مالک یا ایمیل‌هایی است که مالک تأیید کرده است.</p>
+    </section>
   </div>
   <script src="/assets/app.js"></script>
 </body>
