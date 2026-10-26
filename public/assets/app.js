@@ -29,6 +29,15 @@
       change: pick(a, ["change_percent", "change", "percent_change", "changePercentage"]),
       history: Array.isArray(a.history) ? a.history : Array.isArray(a.spark) ? a.spark : []
     }));
+    let forecasts = pick(data, ["forecasts", "predictions", "forecast", "price_predictions"], []);
+    if (!Array.isArray(forecasts)) forecasts = [];
+    forecasts = forecasts.map(f => ({
+      name: safeText(pick(f, ["name", "asset_name", "title", "symbol", "asset"]), "—"),
+      past: pick(f, ["past_price", "previous_price", "price_past", "price_before"]),
+      current: pick(f, ["current_price", "price", "latest_price"]),
+      predicted: pick(f, ["predicted_price", "forecast_price", "price_prediction", "target_price"]),
+      priority: safeText(pick(f, ["priority", "market_impact", "impact", "importance"]), "—")
+    }));
     let news = pick(data, ["news", "articles", "latest_news"], []);
     if (!Array.isArray(news)) news = [];
     news = news.map(n => ({
@@ -40,7 +49,7 @@
     }));
     let analysis = pick(data, ["analysis", "output", "report", "ai_analysis"], "");
     if (analysis && typeof analysis === "object") analysis = pick(analysis, ["output", "text", "content"], JSON.stringify(analysis, null, 2));
-    return {generated_at: pick(data, ["generated_at", "updated_at", "timestamp"]), assets, news, analysis: String(analysis || ""), sources: data.sources || data.source_status || {}};
+    return {generated_at: pick(data, ["generated_at", "updated_at", "timestamp"]), assets, forecasts, news, analysis: String(analysis || ""), sources: data.sources || data.source_status || {}};
   }
   function dateText(value) {
     if (!value) return "زمان نامشخص";
@@ -95,6 +104,7 @@
     $("#data-age").textContent = d.generated_at ? dateText(d.generated_at) : "—";
     $("#top-assets").innerHTML = renderAssets(d.assets.slice(0,5));
     $("#all-assets").innerHTML = d.assets.length ? `<table><thead><tr><th>نام</th><th>نماد</th><th>قیمت</th><th>تغییر</th></tr></thead><tbody>${d.assets.map(a=>`<tr><td>${escapeHtml(a.name)}</td><td dir="ltr">${escapeHtml(a.symbol)}</td><td>${escapeHtml(money(a.price))} ${escapeHtml(a.unit)}</td><td class="${changeClass(a.change)}">${escapeHtml(changeText(a.change))}</td></tr>`).join("")}</tbody></table>` : '<div class="empty-state">دارایی‌ای از API دریافت نشده است.</div>';
+    $("#forecast-table").innerHTML = d.forecasts.length ? `<table><thead><tr><th>اسم</th><th>قیمت گذشته</th><th>قیمت فعلی</th><th>قیمت پیش‌بینی‌شده</th><th>اولویت تأثیر در بازار</th></tr></thead><tbody>${d.forecasts.map(f=>`<tr><td>${escapeHtml(f.name)}</td><td>${escapeHtml(f.past == null || f.past === "" ? "داده موجود نیست" : money(f.past))}</td><td>${escapeHtml(f.current == null || f.current === "" ? "داده موجود نیست" : money(f.current))}</td><td>${escapeHtml(f.predicted == null || f.predicted === "" ? "داده موجود نیست" : money(f.predicted))}</td><td>${escapeHtml(f.priority || "داده موجود نیست")}</td></tr>`).join("")}</tbody></table>` : '<div class="empty-state">هنوز پیش‌بینی ساختاریافته‌ای از n8n دریافت نشده است.</div>';
     $("#latest-news").innerHTML = renderNews(d.news, 4);
     $("#all-news").innerHTML = renderNews(d.news);
     $("#analysis-output").textContent = d.analysis || "تحلیلی در پاسخ API وجود ندارد. فیلد analysis یا output را به پاسخ اضافه کنید.";
@@ -488,14 +498,14 @@
     if (view === "admin" && !state.isAdmin) { openAuth(); setAuthMessage("برای ورود به پنل مدیریت، با ایمیلی که مدیر اصلی مجاز کرده وارد شو.", "warn"); return; }
     document.querySelectorAll(".view").forEach(el=>el.classList.toggle("active", el.id === `view-${view}`));
     document.querySelectorAll(".nav-link").forEach(el=>el.classList.toggle("active", el.dataset.view === view));
-    const titles = {dashboard:"نمای کلی بازار",assets:"دارایی‌ها",news:"اخبار بازار",analysis:"تحلیل ورک‌فلو",admin:"پنل مدیریت"};
+    const titles = {dashboard:"نمای کلی بازار",settings:"تنظیمات",assets:"تنظیمات",news:"اخبار بازار",analysis:"تحلیل ورک‌فلو",admin:"پنل مدیریت"};
     $("#page-title").textContent = titles[view] || "ماهان مارکت ایجنت";
     history.replaceState(null,"",`#${view}`);
   }));
   $("#refresh-btn").addEventListener("click", refresh);
   $("#chart-asset").addEventListener("change", e => {state.selectedAsset=e.target.value; renderChart(state.payload?.assets?.[Number(e.target.value)]);});
   const initialView = location.hash.slice(1);
-  if (["dashboard","assets","news","analysis"].includes(initialView)) {
+  if (["dashboard","settings","assets","news","analysis"].includes(initialView)) {
     document.querySelector(`[data-view="${initialView}"]`)?.click();
   }
   refresh();

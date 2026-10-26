@@ -20,11 +20,9 @@
       <div class="side-label">منوی اصلی</div>
       <nav>
         <a class="nav-link active" href="#dashboard" data-view="dashboard"><span>▦</span> نمای کلی</a>
-        <a class="nav-link" href="#assets" data-view="assets"><span>◈</span> دارایی‌ها</a>
-        <a class="nav-link" href="#news" data-view="news"><span>≋</span> اخبار بازار</a>
-        <a class="nav-link" href="#analysis" data-view="analysis"><span>⌁</span> تحلیل ورک‌فلو</a>
-        <a class="nav-link hidden" href="#admin" data-view="admin" data-admin-only><span>⚙</span> پنل مدیریت</a>
+        <a class="nav-link" href="#settings" data-view="settings"><span>⚙</span> تنظیمات</a>
       </nav>
+      <div class="notice-warn prediction-warning" role="alert"><strong>⚠ هشدار مهم دربارهٔ پیش‌بینی‌ها</strong><p>پیش‌بینی‌های این سایت تضمین‌شده نیستند و ممکن است محقق نشوند. آن‌ها وعدهٔ قیمت نیستند و نباید به‌تنهایی مبنای تصمیم مالی قرار بگیرند.</p></div>
       <div class="sidebar-bottom">
         <span class="status-dot"></span><span id="connection-label">منتظر دادهٔ بازار</span>
         <small>آخرین دادهٔ منتشرشده نمایش داده می‌شود</small>
@@ -51,16 +49,16 @@
           <article class="stat-card"><span>اخبار دریافتی</span><strong id="news-count">۰</strong><small>از ورک‌فلو</small></article>
           <article class="stat-card"><span>آخرین دریافت</span><strong id="data-age">—</strong><small>زمان ثبت‌شده در داده</small></article>
         </div>
-        <div class="content-grid">
+        <div class="content-grid chart-full-width">
           <article class="panel chart-panel"><div class="panel-head"><div><h3>روند قیمت</h3><p id="chart-subtitle">پس از اتصال تاریخچه نمایش داده می‌شود</p></div><select id="chart-asset" aria-label="انتخاب دارایی"><option value="">انتخاب دارایی</option></select></div><div class="chart-wrap"><canvas id="price-chart" aria-label="نمودار قیمت"></canvas><div id="chart-empty" class="empty-state">برای نمایش نمودار، دادهٔ دارایی باید تاریخچه‌ای شامل زمان و قیمت داشته باشد.</div></div></article>
-          <article class="panel"><div class="panel-head"><div><h3>دارایی‌ها</h3><p>آخرین قیمت دریافتی</p></div><a href="#assets" class="text-link" data-view="assets">مشاهده همه</a></div><div id="top-assets" class="asset-list"><div class="empty-state">داده‌ای دریافت نشده است.</div></div></article>
+          
         </div>
         <article class="panel"><div class="panel-head"><div><h3>آخرین اخبار</h3><p>عنوان و لینک خبرهای ارسال‌شده توسط ورک‌فلو</p></div><a href="#news" class="text-link" data-view="news">همه اخبار</a></div><div id="latest-news" class="news-list"><div class="empty-state">خبری دریافت نشده است.</div></div></article>
+        <article class="panel forecast-panel"><div class="panel-head"><div><h3>جدول قیمت‌ها و پیش‌بینی‌ها</h3><p>اطلاعات فقط از ورک‌فلو n8n دریافت می‌شود.</p></div></div><div id="forecast-table" class="asset-table"><div class="empty-state">هنوز دادهٔ پیش‌بینی دریافت نشده است.</div></div></article>
       </section>
 
       <section class="view" id="view-assets">
-        <div class="section-heading"><div><h2>دارایی‌ها</h2><p>فهرست پویا؛ برای افزودن ارز، API دارایی جدید را برگرداند.</p></div></div>
-        <div id="all-assets" class="asset-table panel"><div class="empty-state">داده‌ای دریافت نشده است.</div></div>
+        <div class="section-heading"><div><h2>تنظیمات</h2><p>تنظیمات نمایش و اتصال داده‌ها در نسخه‌های بعدی اضافه می‌شوند.</p></div></div><article class="panel"><p>داده‌ها و پیش‌بینی‌ها از n8n دریافت می‌شوند؛ سایت خودش پیش‌بینی تولید نمی‌کند.</p></article>
       </section>
 
       <section class="view" id="view-news">
