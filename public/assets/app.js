@@ -24,8 +24,10 @@
   }
   function applyThemeSettings(persist = true) {
     document.body.dataset.themeMode = themeSettings.mode;
-    document.documentElement.style.setProperty("--cyan", themeSettings.color);
-    document.documentElement.style.setProperty("--theme-accent", themeSettings.color);
+    const root = document.documentElement;
+    root.style.setProperty("--cyan", themeSettings.color);
+    root.style.setProperty("--blue", `color-mix(in srgb, ${themeSettings.color} 76%, white)`);
+    root.style.setProperty("--theme-accent", themeSettings.color);
     const isLight = themeSettings.mode === "light";
     const toggle = $("#theme-mode-toggle");
     if (toggle) toggle.checked = isLight;
@@ -49,9 +51,9 @@
     if (persist) {
       try { localStorage.setItem(themeStorageKey, JSON.stringify(themeSettings)); } catch (error) { console.warn("Theme preferences could not be saved:", error); }
     }
-    if (state.chart && state.payload) {
+    if (state.payload && state.selectedAsset !== "") {
       const index = Number(state.selectedAsset);
-      renderChart(state.payload.assets?.[index] || null);
+      if (Number.isInteger(index)) renderChart(state.payload.assets?.[index] || null);
     }
   }
   function initializeThemeSettings() {
@@ -94,7 +96,6 @@
       setThemeMessage("رنگ سفارشی با موفقیت اعمال شد.");
     });
   }
-  initializeThemeSettings();
   const money = (value) => {
     if (value === null || value === undefined || value === "") return "—";
     const n = Number(String(value).replaceAll(",", ""));
@@ -599,5 +600,6 @@
   if (["dashboard","settings","assets","news","analysis"].includes(initialView)) {
     document.querySelector(`[data-view="${initialView}"]`)?.click();
   }
+  initializeThemeSettings();
   refresh();
 })();
