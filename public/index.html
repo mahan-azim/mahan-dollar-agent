@@ -6,7 +6,7 @@
   <meta name="theme-color" content="#07111b">
   <title>ماهان مارکت ایجنت | پایش بازار</title>
   <link rel="icon" type="image/svg+xml" href="/assets/mahan-market-agent.svg">
-  <link rel="stylesheet" href="/assets/style.css?v=20261026-themefix1">
+  <link rel="stylesheet" href="/assets/style.css?v=20261118-profile-n8n">
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
@@ -21,6 +21,7 @@
       <nav>
         <a class="nav-link active" href="#dashboard" data-view="dashboard"><span>▦</span> نمای کلی</a>
         <a class="nav-link" href="#settings" data-view="settings"><span>⚙</span> تنظیمات</a>
+        <a class="nav-link hidden" id="profile-nav" href="#profile" data-view="profile"><span>◉</span> پروفایل</a>
       </nav>
       <div class="notice-warn prediction-warning" role="alert"><strong>⚠ هشدار مهم دربارهٔ پیش‌بینی‌ها</strong><p>پیش‌بینی‌های این سایت تضمین‌شده نیستند و ممکن است محقق نشوند. آن‌ها وعدهٔ قیمت نیستند و نباید به‌تنهایی مبنای تصمیم مالی قرار بگیرند.</p></div>
       <div class="sidebar-bottom">
@@ -33,7 +34,7 @@
       <header class="topbar">
         <div><div class="eyebrow">مرکز پایش بازار</div><h1 id="page-title">نمای کلی بازار</h1></div>
         <div class="top-actions">
-          <button id="auth-open" class="button button-primary">ورود / پنل مدیریت</button>
+          <button id="auth-open" class="button button-primary" disabled title="پس از تکمیل ورک‌فلوی مستقل حساب‌ها فعال می‌شود">ورود به پلن (به‌زودی)</button>
           <span id="last-updated" class="updated">آخرین به‌روزرسانی: نامشخص</span>
           <button id="refresh-btn" class="button button-outline">↻ بروزرسانی</button>
         </div>
@@ -108,6 +109,17 @@
         <article class="panel settings-note"><p>تنظیمات ظاهری فقط در همین مرورگر ذخیره می‌شوند و روی داده‌ها یا تحلیل‌های بازار تأثیری ندارند.</p></article>
       </section>
 
+      <section class="view hidden" id="view-profile">
+        <div class="section-heading"><div><h2>پروفایل</h2><p>تنظیمات حساب پس از فعال‌شدن ورود و ورک‌فلوی جداگانهٔ کاربران قابل ذخیره خواهد بود.</p></div></div>
+        <article class="panel profile-panel">
+          <div class="profile-avatar-placeholder" aria-hidden="true">◉</div>
+          <label for="profile-username">نام کاربری</label><input type="text" id="profile-username" autocomplete="nickname" maxlength="60" placeholder="نام کاربری" disabled>
+          <label for="profile-avatar">عکس پروفایل</label><input type="file" id="profile-avatar" accept="image/png,image/jpeg,image/webp" disabled>
+          <label for="profile-email">ویرایش ایمیل</label><input type="email" id="profile-email" autocomplete="email" disabled>
+          <p class="settings-help">ویرایش ایمیل با تأیید نشانی جدید انجام می‌شود. سطح دسترسی فقط توسط سرور تعیین می‌شود.</p>
+          <button type="button" class="button button-primary" disabled>ذخیرهٔ تغییرات (به‌زودی)</button>
+        </article>
+      </section>
       <section class="view" id="view-news">
         <div class="section-heading"><div><h2>اخبار بازار</h2><p>خبرها از n8n دریافت می‌شوند؛ سایت خبرها را تحلیل یا رتبه‌بندی نمی‌کند.</p></div></div>
         <div id="all-news" class="panel news-list"><div class="empty-state">خبری دریافت نشده است.</div></div>
@@ -156,7 +168,7 @@
       <button type="button" id="auth-close" class="auth-close" aria-label="بستن">×</button>
       <img src="/assets/mahan-market-agent.svg" class="auth-logo" width="60" height="60" alt="">
       <h2 id="auth-title">ورود به Mahan Market Agent</h2>
-      <p class="auth-subtitle">برای ورود مدیران، از حساب تأییدشده استفاده کن.</p>
+      <p class="auth-subtitle">ورود و ثبت‌نام پس از تکمیل ورک‌فلوی مستقل کاربران فعال می‌شود.</p>
       <div id="auth-message" class="notice hidden" role="status"></div>
       <div id="auth-signed-in" class="auth-signed-in hidden">
         <p id="auth-account-label"></p>
@@ -174,10 +186,6 @@
           <label for="auth-email">ورود با کد ایمیل</label>
           <div class="auth-input-row"><input id="auth-email" type="email" placeholder="name@example.com" autocomplete="email" required><button class="button button-primary" type="submit">ارسال کد</button></div>
         </form>
-        <form id="phone-otp-form" class="auth-form">
-          <label for="auth-phone">ورود با کد پیامک</label>
-          <div class="auth-input-row"><input id="auth-phone" type="tel" placeholder="+98912xxxxxxx" autocomplete="tel" required><button class="button button-primary" type="submit">ارسال کد</button></div>
-        </form>
         <form id="verify-otp-form" class="auth-form hidden">
           <label for="auth-otp">کد تأیید ارسال‌شده</label>
           <div class="auth-input-row"><input id="auth-otp" type="text" inputmode="numeric" autocomplete="one-time-code" minlength="6" maxlength="10" placeholder="کد تأیید" required><button class="button button-primary" type="submit">تأیید و ورود</button></div>
@@ -187,6 +195,6 @@
       <p class="auth-footnote">ورود موفق به‌تنهایی دسترسی مدیر نمی‌دهد. دسترسی مدیر فقط برای ایمیل مالک یا ایمیل‌هایی است که مالک تأیید کرده است.</p>
     </section>
   </div>
-  <script src="/assets/app.js?v=20261026-themefix1"></script>
+  <script src="/assets/app.js?v=20261118-profile-n8n"></script>
 </body>
 </html>
