@@ -122,3 +122,15 @@ body[data-theme-mode="light"] .sidebar{background:var(--panel)}
 body[data-theme-mode="light"] .stat-card,body[data-theme-mode="light"] .panel{background:var(--panel)}
 body[data-theme-mode="light"] .nav-link:hover,body[data-theme-mode="light"] .nav-link.active{background:color-mix(in srgb,var(--cyan) 13%,var(--panel));color:color-mix(in srgb,var(--cyan) 70%,#102333)}
 body[data-theme-mode="light"] .stat-card strong,body[data-theme-mode="light"] .text-link,body[data-theme-mode="light"] .brand small{color:color-mix(in srgb,var(--cyan) 70%,#102333)}
+
+/* High-contrast warning in both themes, plus profile UI styling. */
+body[data-theme-mode="dark"] .prediction-warning{background:#080a0e;border-color:#ef7b8a;color:#fce8eb}
+body[data-theme-mode="dark"] .prediction-warning strong{color:#ffb6c1}
+body[data-theme-mode="light"] .prediction-warning{background:#fff1f2;border-color:#ce5062;color:#722231}
+body[data-theme-mode="light"] .prediction-warning strong{color:#9c2039}
+.profile-panel{max-width:680px;display:grid;gap:12px}
+.profile-panel label{font-size:12px;color:var(--text);font-weight:600}
+.profile-panel input{width:100%;border:1px solid var(--border);border-radius:10px;padding:11px;background:var(--panel2);color:var(--text);font:inherit}
+.profile-panel input:disabled{opacity:.7;cursor:not-allowed}
+.profile-panel .settings-help{font-size:12px;line-height:2;color:var(--muted)}
+.profile-avatar-placeholder{display:grid;place-items:center;width:70px;height:70px;border:1px solid var(--border);border-radius:50%;font-size:30px;color:var(--cyan);background:var(--panel2)}
