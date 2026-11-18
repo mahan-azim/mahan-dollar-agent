@@ -35,7 +35,8 @@ const MIME_TYPES = {
 };
 
 const OWNER_EMAIL = normalizeEmail(process.env.ADMIN_EMAIL || 'mahaneli1394@gmail.com') || 'mahaneli1394@gmail.com';
-let state = { latest: null, events: {}, adminEmails: [], workflowEnabled: true };
+const ACCOUNT_ACCESS_ENABLED = false; // Authentication stays disabled until the separate account workflow is ready.
+let state = { latest: null, events: {}, adminEmails: [], workflowEnabled: true, paidOutput: null, userPlans: {} };
 let writeQueue = Promise.resolve();
 let publishWindow = { startedAt: Date.now(), count: 0 };
 const MAX_PUBLISH_REQUESTS_PER_MINUTE = 120;
@@ -59,7 +60,9 @@ async function loadState() {
       latest: parsed?.latest && typeof parsed.latest === 'object' ? parsed.latest : null,
       events: parsed?.events && typeof parsed.events === 'object' ? parsed.events : {},
       adminEmails: Array.isArray(parsed?.adminEmails) ? [...new Set(parsed.adminEmails.map(normalizeEmail).filter(Boolean))] : [],
-      workflowEnabled: parsed?.workflowEnabled !== false
+      workflowEnabled: parsed?.workflowEnabled !== false,
+      paidOutput: typeof parsed?.paidOutput === 'string' ? parsed.paidOutput : null,
+      userPlans: parsed?.userPlans && typeof parsed.userPlans === 'object' && !Array.isArray(parsed.userPlans) ? parsed.userPlans : {}
     };
   } catch (error) {
     if (error.code !== 'ENOENT') {
@@ -197,6 +200,7 @@ function isAdmin(user) {
 }
 
 async function getAuthenticatedUser(req) {
+  if (!ACCOUNT_ACCESS_ENABLED) return null;
   const token = header(req, 'authorization').match(/^Bearer\s+(.+)$/i)?.[1]?.trim();
   const supabaseUrl = String(process.env.SUPABASE_URL || '').replace(/\/+$/, '');
   const anonKey = process.env.SUPABASE_ANON_KEY || process.env.SUPABASE_PUBLISHABLE_KEY || '';
@@ -421,15 +425,20 @@ async function publish(req, res) {
   if (Buffer.byteLength(secret, 'utf8') < 32) {
     return json(res, 503, { error: 'کلید N8N_PUSH_SECRET در تنظیمات سرور تعریف نشده یا کوتاه است.' });
   }
+  const suppliedKey = header(req, 'x-api-key');
+  const expectedKey = Buffer.from(secret, 'utf8');
+  const actualKey = Buffer.from(suppliedKey, 'utf8');
+  const acceptedKey = Boolean(suppliedKey && actualKey.length === expectedKey.length && timingSafeEqual(actualKey, expectedKey));
+  if (suppliedKey && !acceptedKey) return json(res, 401, { error: 'کلید API معتبر نیست.' });
   const timestamp = header(req, 'x-mahan-timestamp');
-  const eventId = header(req, 'x-mahan-event-id');
+  const eventId = header(req, 'x-mahan-event-id') || (acceptedKey ? randomUUID() : '');
   const signature = header(req, 'x-mahan-signature').replace(/^sha256=/i, '').toLowerCase();
-  if (!/^\d{10,13}$/.test(timestamp) || !/^[A-Za-z0-9._:-]{16,128}$/.test(eventId) || !/^[a-f0-9]{64}$/.test(signature)) {
+  if (!acceptedKey && (!/^\d{10,13}$/.test(timestamp) || !/^[A-Za-z0-9._:-]{16,128}$/.test(eventId) || !/^[a-f0-9]{64}$/.test(signature))) {
     return json(res, 401, { error: 'هدرهای احراز هویت ناقص یا نامعتبر هستند.' });
   }
-  const timestampNumber = Number(timestamp.length === 13 ? Math.floor(Number(timestamp) / 1000) : timestamp);
+  const timestampNumber = acceptedKey ? Math.floor(Date.now() / 1000) : Number(timestamp.length === 13 ? Math.floor(Number(timestamp) / 1000) : timestamp);
   const maxSkew = Math.max(30, Math.min(900, Number(process.env.N8N_MAX_CLOCK_SKEW_SECONDS) || DEFAULT_CLOCK_SKEW_SECONDS));
-  if (!Number.isSafeInteger(timestampNumber) || Math.abs(Math.floor(Date.now() / 1000) - timestampNumber) > maxSkew) {
+  if (!acceptedKey && (!Number.isSafeInteger(timestampNumber) || Math.abs(Math.floor(Date.now() / 1000) - timestampNumber) > maxSkew)) {
     return json(res, 401, { error: 'زمان درخواست منقضی شده است؛ ساعت n8n و سرور را بررسی کنید.' });
   }
   const contentLength = Number(req.headers['content-length'] || 0);
@@ -443,12 +452,52 @@ async function publish(req, res) {
   }
   const expected = createHmac('sha256', secret).update(`${timestamp}.${eventId}.${rawBody}`, 'utf8').digest();
   const supplied = Buffer.from(signature, 'hex');
-  if (supplied.length !== expected.length || !timingSafeEqual(supplied, expected)) {
+  if (!acceptedKey && (supplied.length !== expected.length || !timingSafeEqual(supplied, expected))) {
     return json(res, 401, { error: 'امضای امنیتی درست نیست؛ پیام پذیرفته نشد.' });
   }
   let payload;
   try { payload = JSON.parse(rawBody); }
   catch { return json(res, 400, { error: 'بدنهٔ درخواست JSON معتبر نیست.' }); }
+
+  // n8n supplies public/free and private/paid analysis separately.
+  // Only allowlisted market fields enter the public /api/market response.
+  const inputPayload = payload;
+  const query = new URL(req.url || '/', 'http://localhost').searchParams;
+  const freeOutput = query.get('free_output') ?? inputPayload.free_output ?? null;
+  const paidOutput = query.get('paid_output') ?? inputPayload.paid_output ?? null;
+  const parsePrice = value => {
+    if (value == null || String(value).trim() === '') return null;
+    const parsed = Number(String(value).replace(/[,_\s٬،]/g, ''));
+    return Number.isFinite(parsed) ? parsed : null;
+  };
+  const actualPrice = parsePrice(header(req, 'actual_dollar') || header(req, 'actual-dollar'));
+  const predictedPrice = parsePrice(header(req, 'predicted_dollar') || header(req, 'predicted-dollar'));
+  const allowedFields = ['assets','currencies','prices','news','articles','analysis','output','report','ai_analysis','sources','market_context','forecasts','predictions','generated_at','updated_at'];
+  const publicPacket = {};
+  for (const field of allowedFields) if (inputPayload[field] !== undefined) publicPacket[field] = inputPayload[field];
+  if (freeOutput !== null) publicPacket.analysis = String(freeOutput);
+  if ((actualPrice !== null || predictedPrice !== null) && !Array.isArray(publicPacket.assets)) {
+    publicPacket.assets = [{ symbol: 'USD', name: 'دلار آمریکا', ...(actualPrice !== null ? {price: actualPrice} : {}) }];
+    publicPacket.forecasts = [{ name: 'دلار آمریکا', current_price: actualPrice, predicted_price: predictedPrice }];
+  }
+  let incomingUsers = null;
+  if (inputPayload.users !== undefined) {
+    let rawUsers = inputPayload.users;
+    if (typeof rawUsers === 'string') {
+      try { rawUsers = JSON.parse(rawUsers); }
+      catch { return json(res, 422, { error: 'فیلد users باید شیء JSON باشد.' }); }
+    }
+    if (!rawUsers || typeof rawUsers !== 'object' || Array.isArray(rawUsers) || Object.keys(rawUsers).length > 10000) {
+      return json(res, 422, { error: 'فیلد users معتبر نیست.' });
+    }
+    incomingUsers = Object.create(null);
+    for (const [identifier, rawPlan] of Object.entries(rawUsers)) {
+      const key = String(identifier).trim();
+      const plan = String(rawPlan).trim().toLowerCase();
+      if (key && key.length <= 320 && ['free','pro','admin'].includes(plan) && key !== '__proto__' && key !== 'constructor') incomingUsers[key] = plan;
+    }
+  }
+  payload = publicPacket;
   if (!validPayload(payload)) return json(res, 422, { error: 'ساختار داده با قرارداد API سازگار نیست.' });
 
   const receivedAt = new Date().toISOString();
@@ -484,8 +533,13 @@ async function publish(req, res) {
         event_id: eventId,
         server_received_at: receivedAt
       };
+      for (const privateKey of ['users', 'userPlans', 'paid_output', 'paidOutput', 'free_output', 'privateData']) delete nextLatest[privateKey];
       nextEvents[eventKey] = { event_id_hash: idHash, received_at: receivedAt };
-      const nextState = { ...state, latest: nextLatest, events: nextEvents };
+      const nextState = {
+        ...state, latest: nextLatest, events: nextEvents,
+        ...(incomingUsers !== null ? { userPlans: incomingUsers } : {}),
+        ...(paidOutput !== null ? { paidOutput: String(paidOutput) } : {})
+      };
       await saveState(nextState);
       state = nextState;
       return { duplicate: false, assetCount: enrichedAssets.length };
@@ -539,14 +593,15 @@ const server = http.createServer(async (req, res) => {
     const supabaseUrl = String(process.env.SUPABASE_URL || '').replace(/\/+$/, '');
     const anonKey = process.env.SUPABASE_ANON_KEY || process.env.SUPABASE_PUBLISHABLE_KEY || '';
     return json(res, 200, {
-      configured: Boolean(supabaseUrl && anonKey),
+      configured: ACCOUNT_ACCESS_ENABLED && Boolean(supabaseUrl && anonKey),
       supabaseUrl: supabaseUrl || null,
       supabaseAnonKey: anonKey || null,
       brand: 'Mahan Market Agent',
-      methods: ['google', 'azure', 'apple', 'github', 'email', 'phone']
+      methods: ['google', 'azure', 'apple', 'github', 'email'], accountAccessEnabled: ACCOUNT_ACCESS_ENABLED
     });
   }
   if (pathname === '/api/auth/me' && req.method === 'GET') {
+    if (!ACCOUNT_ACCESS_ENABLED) return json(res, 503, { error: 'ورود کاربران تا آماده‌شدن ورک‌فلوی مستقل غیرفعال است.' });
     const user = await getAuthenticatedUser(req);
     if (!user) return json(res, 401, { error: 'نشست معتبر نیست یا احراز هویت تنظیم نشده است.', code: 'AUTH_REQUIRED' });
     return json(res, 200, {
@@ -556,7 +611,10 @@ const server = http.createServer(async (req, res) => {
     });
   }
 
-  if (pathname.startsWith('/api/admin/')) return adminApi(req, res, pathname);
+  if (pathname.startsWith('/api/admin/')) {
+    if (!ACCOUNT_ACCESS_ENABLED) return json(res, 503, { error: 'پنل مدیریت فعلاً غیرفعال است.' });
+    return adminApi(req, res, pathname);
+  }
   if (pathname === '/api/publish') return publish(req, res);
   if (pathname === '/api/market') {
     if (req.method !== 'GET') {
