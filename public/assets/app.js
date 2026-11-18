@@ -262,7 +262,10 @@
   function updateAdminVisibility() {
     document.querySelectorAll("[data-admin-only]").forEach(el => el.classList.toggle("hidden", !state.isAdmin));
     $("#view-admin").classList.toggle("hidden", !state.isAdmin);
-    $("#auth-open").textContent = state.isAdmin ? "پنل مدیریت" : state.currentUser ? "حساب کاربری" : "ورود / پنل مدیریت";
+    $("#profile-nav")?.classList.toggle("hidden", !state.currentUser);
+    $("#view-profile")?.classList.toggle("hidden", !state.currentUser);
+    if ($("#profile-email")) $("#profile-email").value = state.currentUser?.email || "";
+    $("#auth-open").textContent = "ورود به پلن (به‌زودی)";
     if (state.currentUser) {
       $("#auth-signed-in").classList.remove("hidden");
       $("#auth-methods").classList.add("hidden");
@@ -325,7 +328,7 @@
       const config = await response.json();
       state.authConfigured = Boolean(config.configured && window.supabase?.createClient);
       if (!state.authConfigured) {
-        document.querySelectorAll("[data-oauth], #email-otp-form button, #phone-otp-form button").forEach(el => { el.disabled = true; });
+        document.querySelectorAll("[data-oauth], #email-otp-form button").forEach(el => { el.disabled = true; });
         setAuthMessage("ورود هنوز تنظیم نشده است. در Railway متغیرهای SUPABASE_URL و SUPABASE_ANON_KEY را تنظیم و در Supabase روش‌های ورود را فعال کن.");
         return;
       }
@@ -368,7 +371,6 @@
       state.otpTarget = { kind: "email", value: email };
       $("#verify-otp-form").classList.remove("hidden");
       $("#email-otp-form").classList.add("hidden");
-      $("#phone-otp-form").classList.add("hidden");
       $(".oauth-grid").classList.add("hidden");
       setAuthMessage(`کد ورود به ${email} ارسال شد. صندوق ورودی و پوشهٔ هرزنامه را بررسی کن.`);
       $("#auth-otp").focus();
@@ -377,40 +379,17 @@
     }
   });
 
-  $("#phone-otp-form").addEventListener("submit", async event => {
-    event.preventDefault();
-    const phone = $("#auth-phone").value.trim();
-    if (!state.authClient) return setAuthMessage("سرویس ورود هنوز تنظیم نشده است.", "warn");
-    if (!/^\+[1-9]\d{7,14}$/.test(phone)) return setAuthMessage("شماره را با کد کشور وارد کن؛ مانند +98912xxxxxxx.", "warn");
-    try {
-      const { error } = await state.authClient.auth.signInWithOtp({ phone, options: { shouldCreateUser: true } });
-      if (error) throw error;
-      state.otpTarget = { kind: "phone", value: phone };
-      $("#verify-otp-form").classList.remove("hidden");
-      $("#email-otp-form").classList.add("hidden");
-      $("#phone-otp-form").classList.add("hidden");
-      $(".oauth-grid").classList.add("hidden");
-      setAuthMessage(`کد ورود به شمارهٔ ${phone} ارسال شد.`);
-      $("#auth-otp").focus();
-    } catch (error) {
-      setAuthMessage(`ارسال پیامک ناموفق بود: ${error.message}. تنظیمات ارائه‌دهندهٔ SMS را بررسی کن.`, "error");
-    }
-  });
-
   $("#verify-otp-form").addEventListener("submit", async event => {
     event.preventDefault();
-    if (!state.authClient || !state.otpTarget) return setAuthMessage("ابتدا کد ایمیل یا پیامک را درخواست کن.", "warn");
+    if (!state.authClient || !state.otpTarget) return setAuthMessage("ابتدا کد ایمیل را درخواست کن.", "warn");
     const token = $("#auth-otp").value.trim();
     try {
-      const params = state.otpTarget.kind === "email"
-        ? { email: state.otpTarget.value, token, type: "email" }
-        : { phone: state.otpTarget.value, token, type: "sms" };
+      const params = { email: state.otpTarget.value, token, type: "email" };
       const { data, error } = await state.authClient.auth.verifyOtp(params);
       if (error) throw error;
       state.otpTarget = null;
       $("#verify-otp-form").classList.add("hidden");
       $("#email-otp-form").classList.remove("hidden");
-      $("#phone-otp-form").classList.remove("hidden");
       $(".oauth-grid").classList.remove("hidden");
       $("#auth-otp").value = "";
       setAuthMessage("ورود با موفقیت انجام شد.");
@@ -424,7 +403,6 @@
     state.otpTarget = null;
     $("#verify-otp-form").classList.add("hidden");
     $("#email-otp-form").classList.remove("hidden");
-    $("#phone-otp-form").classList.remove("hidden");
     $(".oauth-grid").classList.remove("hidden");
     setAuthMessage("");
   });
@@ -587,10 +565,11 @@
 
   document.querySelectorAll("[data-view]").forEach(link => link.addEventListener("click", event => {
     event.preventDefault(); const view = link.dataset.view;
-    if (view === "admin" && !state.isAdmin) { openAuth(); setAuthMessage("برای ورود به پنل مدیریت، با ایمیلی که مدیر اصلی مجاز کرده وارد شو.", "warn"); return; }
+    if (view === "admin" && !state.isAdmin) return;
+    if (view === "profile" && !state.currentUser) return;
     document.querySelectorAll(".view").forEach(el=>el.classList.toggle("active", el.id === `view-${view}`));
     document.querySelectorAll(".nav-link").forEach(el=>el.classList.toggle("active", el.dataset.view === view));
-    const titles = {dashboard:"نمای کلی بازار",settings:"تنظیمات",assets:"تنظیمات",news:"اخبار بازار",analysis:"تحلیل ورک‌فلو",admin:"پنل مدیریت"};
+    const titles = {dashboard:"نمای کلی بازار",settings:"تنظیمات",profile:"پروفایل",assets:"تنظیمات",news:"اخبار بازار",analysis:"تحلیل ورک‌فلو",admin:"پنل مدیریت"};
     $("#page-title").textContent = titles[view] || "ماهان مارکت ایجنت";
     history.replaceState(null,"",`#${view}`);
   }));
