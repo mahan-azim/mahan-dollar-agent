@@ -273,8 +273,6 @@
   function updateAdminVisibility() {
     document.querySelectorAll("[data-admin-only]").forEach(el => el.classList.toggle("hidden", !state.isAdmin));
     $("#view-admin").classList.toggle("hidden", !state.isAdmin);
-    $("#profile-nav")?.classList.toggle("hidden", !state.currentUser);
-    $("#view-profile")?.classList.toggle("hidden", !state.currentUser);
     if ($("#profile-email")) $("#profile-email").value = state.currentUser?.email || "";
     $("#auth-open").textContent = "ورود به پلن (به‌زودی)";
     if (state.currentUser) {
@@ -577,17 +575,16 @@
   document.querySelectorAll("[data-view]").forEach(link => link.addEventListener("click", event => {
     event.preventDefault(); const view = link.dataset.view;
     if (view === "admin" && !state.isAdmin) return;
-    if (view === "profile" && !state.currentUser) return;
     document.querySelectorAll(".view").forEach(el=>el.classList.toggle("active", el.id === `view-${view}`));
     document.querySelectorAll(".nav-link").forEach(el=>el.classList.toggle("active", el.dataset.view === view));
-    const titles = {dashboard:"نمای کلی بازار",settings:"تنظیمات",profile:"پروفایل",assets:"تنظیمات",news:"اخبار بازار",analysis:"تحلیل ورک‌فلو",admin:"پنل مدیریت"};
+    const titles = {dashboard:"نمای کلی بازار",settings:"تنظیمات",profile:"پروفایل (به‌زودی)",assets:"تنظیمات",news:"اخبار بازار",analysis:"تحلیل ورک‌فلو",admin:"پنل مدیریت"};
     $("#page-title").textContent = titles[view] || "ماهان مارکت ایجنت";
     history.replaceState(null,"",`#${view}`);
   }));
   $("#refresh-btn").addEventListener("click", refresh);
   $("#chart-asset").addEventListener("change", e => {state.selectedAsset=e.target.value; renderChart(state.payload?.assets?.[Number(e.target.value)]);});
   const initialView = location.hash.slice(1);
-  if (["dashboard","settings","assets","news","analysis"].includes(initialView)) {
+  if (["dashboard","settings","profile","assets","news","analysis"].includes(initialView)) {
     document.querySelector(`[data-view="${initialView}"]`)?.click();
   }
   initializeThemeSettings();
