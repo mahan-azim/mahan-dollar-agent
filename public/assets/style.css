@@ -136,3 +136,7 @@ body[data-theme-mode="light"] .prediction-warning p{color:#fff0f2}
 .profile-panel input:disabled{opacity:.7;cursor:not-allowed}
 .profile-panel .settings-help{font-size:12px;line-height:2;color:var(--muted)}
 .profile-avatar-placeholder{display:grid;place-items:center;width:70px;height:70px;border:1px solid var(--border);border-radius:50%;font-size:30px;color:var(--cyan);background:var(--panel2)}
+
+/* The Profile item remains visible, but is not yet an interactive destination. */
+.nav-link.nav-link-disabled,.nav-link.nav-link-disabled:hover{opacity:.52;cursor:not-allowed;pointer-events:none;background:transparent;color:var(--muted)}
+body[data-theme-mode="light"] .nav-link.nav-link-disabled,body[data-theme-mode="light"] .nav-link.nav-link-disabled:hover{color:#657988;background:transparent}
