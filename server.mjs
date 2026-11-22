@@ -419,8 +419,6 @@ async function publish(req, res) {
     return json(res, 405, { error: 'فقط درخواست POST پذیرفته می‌شود.' });
   }
   if (state.workflowEnabled === false) return json(res, 423, { error: 'دریافت داده از n8n توسط مدیر غیرفعال شده است.', code: 'WORKFLOW_DISABLED' });
-  if (!allowedPublishRate()) return json(res, 429, { error: 'تعداد درخواست‌ها بیش از حد مجاز است.' });
-
   const secret = process.env.N8N_PUSH_SECRET || '';
   if (Buffer.byteLength(secret, 'utf8') < 32) {
     return json(res, 503, { error: 'کلید N8N_PUSH_SECRET در تنظیمات سرور تعریف نشده یا کوتاه است.' });
@@ -455,6 +453,8 @@ async function publish(req, res) {
   if (!acceptedKey && (supplied.length !== expected.length || !timingSafeEqual(supplied, expected))) {
     return json(res, 401, { error: 'امضای امنیتی درست نیست؛ پیام پذیرفته نشد.' });
   }
+  // Reject unauthenticated requests before consuming the trusted publisher's rate limit.
+  if (!allowedPublishRate()) return json(res, 429, { error: 'تعداد درخواست‌ها بیش از حد مجاز است.' });
   let payload;
   try { payload = JSON.parse(rawBody); }
   catch { return json(res, 400, { error: 'بدنهٔ درخواست JSON معتبر نیست.' }); }
