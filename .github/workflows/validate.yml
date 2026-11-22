@@ -26,6 +26,8 @@ jobs:
           node -e "new Function(require('node:fs').readFileSync('n8n/Code-Prepare-Signed-Push.js', 'utf8'))"
       - name: Run secure publish integration test
         run: node --test tests/publish-auth.test.mjs
+      - name: Test dashboard data display
+        run: node --test tests/dashboard-display.test.mjs
       - name: Smoke test public page and protected admin API
         shell: bash
         run: |

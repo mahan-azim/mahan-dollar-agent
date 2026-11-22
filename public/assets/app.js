@@ -143,7 +143,17 @@
     }));
     let analysis = pick(data, ["analysis", "output", "report", "ai_analysis"], "");
     if (analysis && typeof analysis === "object") analysis = pick(analysis, ["output", "text", "content"], JSON.stringify(analysis, null, 2));
-    return {generated_at: pick(data, ["generated_at", "updated_at", "timestamp"]), assets, forecasts, news, analysis: String(analysis || ""), sources: data.sources || data.source_status || {}};
+    return {
+      generated_at: pick(data, ["generated_at", "updated_at", "timestamp"]),
+      received_at: pick(data, ["server_received_at", "received_at"]),
+      assets, forecasts, news, analysis: String(analysis || ""), sources: data.sources || data.source_status || {}
+    };
+  }
+  function marketTableRows(data) {
+    // Always display received prices, even if n8n has not sent separate forecasts.
+    return data.forecasts.length ? data.forecasts : data.assets.map(asset => ({
+      name: asset.name, past: null, current: asset.price, predicted: null, priority: "—"
+    }));
   }
   function dateText(value) {
     if (!value) return "زمان نامشخص";
@@ -195,8 +205,9 @@
     $("#last-updated").textContent = "آخرین به‌روزرسانی: " + dateText(d.generated_at);
     $("#asset-count").textContent = money(d.assets.length);
     $("#news-count").textContent = money(d.news.length);
-    $("#data-age").textContent = d.generated_at ? dateText(d.generated_at) : "—";
-    $("#forecast-table").innerHTML = d.forecasts.length ? `<table><thead><tr><th>اسم</th><th>قیمت گذشته</th><th>قیمت فعلی</th><th>قیمت پیش‌بینی‌شده</th><th>اولویت تأثیر در بازار</th></tr></thead><tbody>${d.forecasts.map(f=>`<tr><td>${escapeHtml(f.name)}</td><td>${escapeHtml(f.past == null || f.past === "" ? "داده موجود نیست" : money(f.past))}</td><td>${escapeHtml(f.current == null || f.current === "" ? "داده موجود نیست" : money(f.current))}</td><td>${escapeHtml(f.predicted == null || f.predicted === "" ? "داده موجود نیست" : money(f.predicted))}</td><td>${escapeHtml(f.priority || "داده موجود نیست")}</td></tr>`).join("")}</tbody></table>` : '<div class="empty-state">هنوز پیش‌بینی ساختاریافته‌ای از n8n دریافت نشده است.</div>';
+    $("#data-age").textContent = d.received_at ? dateText(d.received_at) : "—";
+    const tableRows = marketTableRows(d);
+    $("#forecast-table").innerHTML = tableRows.length ? `<table><thead><tr><th>اسم</th><th>قیمت گذشته</th><th>قیمت فعلی</th><th>قیمت پیش‌بینی‌شده</th><th>اولویت تأثیر در بازار</th></tr></thead><tbody>${tableRows.map(f=>`<tr><td>${escapeHtml(f.name)}</td><td>${escapeHtml(f.past == null || f.past === "" ? "داده موجود نیست" : money(f.past))}</td><td>${escapeHtml(f.current == null || f.current === "" ? "داده موجود نیست" : money(f.current))}</td><td>${escapeHtml(f.predicted == null || f.predicted === "" ? "داده موجود نیست" : money(f.predicted))}</td><td>${escapeHtml(f.priority || "داده موجود نیست")}</td></tr>`).join("")}</tbody></table>` : '<div class="empty-state">هنوز اطلاعات قیمت یا پیش‌بینی از n8n دریافت نشده است.</div>';
     $("#latest-news").innerHTML = renderNews(d.news, 4);
     $("#all-news").innerHTML = renderNews(d.news);
     $("#analysis-output").textContent = d.analysis || "تحلیلی در پاسخ API وجود ندارد. فیلد analysis یا output را به پاسخ اضافه کنید.";
