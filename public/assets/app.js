@@ -575,6 +575,7 @@
   document.querySelectorAll("[data-view]").forEach(link => link.addEventListener("click", event => {
     event.preventDefault(); const view = link.dataset.view;
     if (view === "admin" && !state.isAdmin) return;
+    if (view === "profile") return; // Coming soon: visible menu label, disabled navigation.
     document.querySelectorAll(".view").forEach(el=>el.classList.toggle("active", el.id === `view-${view}`));
     document.querySelectorAll(".nav-link").forEach(el=>el.classList.toggle("active", el.dataset.view === view));
     const titles = {dashboard:"نمای کلی بازار",settings:"تنظیمات",profile:"پروفایل (به‌زودی)",assets:"تنظیمات",news:"اخبار بازار",analysis:"تحلیل ورک‌فلو",admin:"پنل مدیریت"};
@@ -584,7 +585,7 @@
   $("#refresh-btn").addEventListener("click", refresh);
   $("#chart-asset").addEventListener("change", e => {state.selectedAsset=e.target.value; renderChart(state.payload?.assets?.[Number(e.target.value)]);});
   const initialView = location.hash.slice(1);
-  if (["dashboard","settings","profile","assets","news","analysis"].includes(initialView)) {
+  if (["dashboard","settings","assets","news","analysis"].includes(initialView)) {
     document.querySelector(`[data-view="${initialView}"]`)?.click();
   }
   initializeThemeSettings();
