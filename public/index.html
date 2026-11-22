@@ -6,7 +6,7 @@
   <meta name="theme-color" content="#07111b">
   <title>ماهان مارکت ایجنت | پایش بازار</title>
   <link rel="icon" type="image/svg+xml" href="/assets/mahan-market-agent.svg">
-  <link rel="stylesheet" href="/assets/style.css?v=20261118-profile-n8n">
+  <link rel="stylesheet" href="/assets/style.css?v=20261122-warning-contrast">
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
@@ -21,7 +21,7 @@
       <nav>
         <a class="nav-link active" href="#dashboard" data-view="dashboard"><span>▦</span> نمای کلی</a>
         <a class="nav-link" href="#settings" data-view="settings"><span>⚙</span> تنظیمات</a>
-        <a class="nav-link hidden" id="profile-nav" href="#profile" data-view="profile"><span>◉</span> پروفایل</a>
+        <a class="nav-link" id="profile-nav" href="#profile" data-view="profile"><span>◉</span> پروفایل (به‌زودی)</a>
       </nav>
       <div class="notice-warn prediction-warning" role="alert"><strong>⚠ هشدار مهم دربارهٔ پیش‌بینی‌ها</strong><p>پیش‌بینی‌های این سایت تضمین‌شده نیستند و ممکن است محقق نشوند. آن‌ها وعدهٔ قیمت نیستند و نباید به‌تنهایی مبنای تصمیم مالی قرار بگیرند.</p></div>
       <div class="sidebar-bottom">
@@ -109,8 +109,8 @@
         <article class="panel settings-note"><p>تنظیمات ظاهری فقط در همین مرورگر ذخیره می‌شوند و روی داده‌ها یا تحلیل‌های بازار تأثیری ندارند.</p></article>
       </section>
 
-      <section class="view hidden" id="view-profile">
-        <div class="section-heading"><div><h2>پروفایل</h2><p>تنظیمات حساب پس از فعال‌شدن ورود و ورک‌فلوی جداگانهٔ کاربران قابل ذخیره خواهد بود.</p></div></div>
+      <section class="view" id="view-profile">
+        <div class="section-heading"><div><h2>پروفایل (به‌زودی)</h2><p>این بخش در به‌روزرسانی‌های آینده فعال می‌شود. تنظیمات حساب فعلاً قابل ویرایش نیستند.</p></div></div>
         <article class="panel profile-panel">
           <div class="profile-avatar-placeholder" aria-hidden="true">◉</div>
           <label for="profile-username">نام کاربری</label><input type="text" id="profile-username" autocomplete="nickname" maxlength="60" placeholder="نام کاربری" disabled>
@@ -195,6 +195,6 @@
       <p class="auth-footnote">ورود موفق به‌تنهایی دسترسی مدیر نمی‌دهد. دسترسی مدیر فقط برای ایمیل مالک یا ایمیل‌هایی است که مالک تأیید کرده است.</p>
     </section>
   </div>
-  <script src="/assets/app.js?v=20261122-dashboard-receipt"></script>
+  <script src="/assets/app.js?v=20261122-profile-coming-soon"></script>
 </body>
 </html>
