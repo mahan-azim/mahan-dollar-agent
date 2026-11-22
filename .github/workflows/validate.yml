@@ -28,6 +28,8 @@ jobs:
         run: node --test tests/publish-auth.test.mjs
       - name: Test dashboard data display
         run: node --test tests/dashboard-display.test.mjs
+      - name: Test profile and warning display
+        run: node --test tests/ui-warning-profile.test.mjs
       - name: Smoke test public page and protected admin API
         shell: bash
         run: |
