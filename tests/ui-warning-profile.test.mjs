@@ -9,14 +9,16 @@ const html = readFileSync(path.join(root, 'public/index.html'), 'utf8');
 const script = readFileSync(path.join(root, 'public/assets/app.js'), 'utf8');
 const css = readFileSync(path.join(root, 'public/assets/style.css'), 'utf8');
 
-test('profile remains visible as coming soon when signed out', () => {
-  assert.match(html, /class="nav-link" id="profile-nav"[^>]*>.*پروفایل \(به‌زودی\)<\/a>/);
-  assert.match(html, /class="view" id="view-profile"/);
-  assert.match(html, /<h2>پروفایل \(به‌زودی\)<\/h2>/);
-  assert.doesNotMatch(script, /if \(view === "profile" && !state\.currentUser\) return/);
-  assert.doesNotMatch(script, /#profile-nav"\)\?\.classList\.toggle\("hidden"/);
-  assert.match(script, /\["dashboard","settings","profile","assets","news","analysis"\]\.includes\(initialView\)/);
+test('profile coming soon is visible, disabled and cannot be opened', () => {
+  assert.match(html, /class="nav-link nav-link-disabled" id="profile-nav" role="link" aria-disabled="true"/);
+  assert.match(html, /پروفایل \(به‌زودی\)<\/span>/);
+  assert.doesNotMatch(html, /id="profile-nav"[^>]*href=/);
+  assert.doesNotMatch(html, /id="profile-nav"[^>]*data-view=/);
+  assert.match(html, /class="view hidden" id="view-profile" aria-hidden="true" inert/);
   assert.match(html, /id="profile-username"[^>]*disabled/);
+  assert.match(script, /if \(view === "profile"\) return/);
+  assert.doesNotMatch(script, /\["dashboard","settings","profile"/);
+  assert.match(css, /\.nav-link\.nav-link-disabled[^\n]*pointer-events:none/);
 });
 
 test('warning is easily distinguishable in light mode', () => {
@@ -31,6 +33,6 @@ test('existing refresh button is preserved', () => {
 });
 
 test('updated JS and CSS are requested with fresh asset versions', () => {
-  assert.match(html, /\/assets\/style\.css\?v=20261122-warning-contrast/);
-  assert.match(html, /\/assets\/app\.js\?v=20261122-profile-coming-soon/);
+  assert.match(html, /\/assets\/style\.css\?v=20261122-profile-disabled/);
+  assert.match(html, /\/assets\/app\.js\?v=20261122-profile-disabled/);
 });
