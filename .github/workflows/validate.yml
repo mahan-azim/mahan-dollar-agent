@@ -23,6 +23,8 @@ jobs:
           node --check scripts/send-test.mjs
           node --check scripts/generate-secret.mjs
           node --check n8n/Code-Prepare-Signed-Push.js
+      - name: Run secure publish integration test
+        run: node --test tests/publish-auth.test.mjs
       - name: Smoke test public page and protected admin API
         shell: bash
         run: |
@@ -38,8 +40,8 @@ jobs:
           grep -q '"ok":true' /tmp/mahan-health.json
           curl --silent --fail http://127.0.0.1:39127/ > /tmp/mahan-home.html
           grep -q 'Mahan Market Agent' /tmp/mahan-home.html
-          test "$(curl --silent --output /dev/null --write-out '%{http_code}' http://127.0.0.1:39127/api/admin/overview)" = "401"
-          test "$(curl --silent --output /dev/null --write-out '%{http_code}' http://127.0.0.1:39127/api/admin/admins)" = "401"
-          test "$(curl --silent --output /dev/null --write-out '%{http_code}' http://127.0.0.1:39127/api/admin/workflow)" = "401"
+          test "$(curl --silent --output /dev/null --write-out '%{http_code}' http://127.0.0.1:39127/api/admin/overview)" = "503"
+          test "$(curl --silent --output /dev/null --write-out '%{http_code}' http://127.0.0.1:39127/api/admin/admins)" = "503"
+          test "$(curl --silent --output /dev/null --write-out '%{http_code}' http://127.0.0.1:39127/api/admin/workflow)" = "503"
           curl --silent --fail http://127.0.0.1:39127/assets/mahan-market-agent.svg > /tmp/mahan-logo.svg
           grep -q '<svg' /tmp/mahan-logo.svg
