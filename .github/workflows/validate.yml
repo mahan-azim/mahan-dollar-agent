@@ -19,6 +19,7 @@ jobs:
       - name: Check JavaScript syntax
         run: |
           node --check server.mjs
+          node --check lib/google-sheets-history.mjs
           node --check public/assets/app.js
           node --check scripts/send-test.mjs
           node --check scripts/generate-secret.mjs
@@ -30,6 +31,8 @@ jobs:
         run: node --test tests/dashboard-display.test.mjs
       - name: Test profile and warning display
         run: node --test tests/ui-warning-profile.test.mjs
+      - name: Test direct read-only Google Sheets market history
+        run: node --test tests/sheets-history.test.mjs
       - name: Smoke test public page and protected admin API
         shell: bash
         run: |

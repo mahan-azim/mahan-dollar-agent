@@ -1,4 +1,5 @@
 import http from 'node:http';
+import { createSheetsHistoryReader, mergeMarketHistory } from './lib/google-sheets-history.mjs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { createHash, createHmac, randomUUID, timingSafeEqual } from 'node:crypto';
@@ -38,6 +39,7 @@ const OWNER_EMAIL = normalizeEmail(process.env.ADMIN_EMAIL || 'mahaneli1394@gmai
 const ACCOUNT_ACCESS_ENABLED = false; // Authentication stays disabled until the separate account workflow is ready.
 let state = { latest: null, events: {}, adminEmails: [], workflowEnabled: true, paidOutput: null, userPlans: {} };
 let writeQueue = Promise.resolve();
+const sheetsHistoryReader = createSheetsHistoryReader();
 let publishWindow = { startedAt: Date.now(), count: 0 };
 const MAX_PUBLISH_REQUESTS_PER_MINUTE = 120;
 
@@ -621,8 +623,19 @@ const server = http.createServer(async (req, res) => {
       res.setHeader('Allow', 'GET');
       return json(res, 405, { error: 'این مسیر فقط برای خواندن داده و با GET در دسترس است.' });
     }
-    if (!state.latest) return json(res, 404, { error: 'هنوز اولین داده از n8n دریافت نشده است.', code: 'WAITING_FOR_FIRST_PUSH' });
-    return json(res, 200, state.latest);
+    let market = state.latest;
+    if (sheetsHistoryReader.configured) {
+      try {
+        // Fetch only timestamp and *_actual_price columns from Google Sheets.
+        // Keep free/paid analysis private and preserve the existing n8n publish API.
+        market = mergeMarketHistory(market, await sheetsHistoryReader.getHistory());
+      } catch (error) {
+        console.error('Google Sheets history unavailable:', error.message);
+        // A transient Google outage must not interrupt the existing live market feed.
+      }
+    }
+    if (!market) return json(res, 404, { error: 'هنوز اولین داده از n8n دریافت نشده است.', code: 'WAITING_FOR_FIRST_PUSH' });
+    return json(res, 200, market);
   }
   return serveStatic(req, res, pathname);
 });
